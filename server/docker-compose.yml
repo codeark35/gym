@@ -1,0 +1,51 @@
+name: gym-application
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:17-alpine
+    container_name: gym_application_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - gym_application_postgres_data:/var/lib/postgresql/data 
+    networks:
+      - gym_application_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Aplicación Backend
+  backend:
+    build: .
+    container_name: gym_application_backend
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      PORT: 3000
+    ports:
+      - "${PORT:-3080}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gym_application_network
+    restart: unless-stopped
+
+volumes:
+  gym_application_postgres_data:
+    name: gym_application_postgres_data
+
+networks:
+  gym_application_network:
+    name: gym_application_network
+    driver: bridge

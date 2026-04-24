@@ -1,0 +1,99 @@
+import { useState } from 'react';
+import { Offcanvas, Form } from 'react-bootstrap';
+import { useExercises } from '../hooks/useExercises';
+import { Exercise, MuscleGroup, MUSCLE_GROUP_LABELS } from '../../../types/workout.types';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { Search } from 'lucide-react';
+
+interface ExercisePickerProps {
+  show: boolean;
+  onHide: () => void;
+  onSelect: (exercise: Exercise) => void;
+}
+
+const MUSCLE_GROUPS = Object.entries(MUSCLE_GROUP_LABELS) as [MuscleGroup, string][];
+
+export default function ExercisePicker({ show, onHide, onSelect }: ExercisePickerProps) {
+  const { data: exercises = [], isLoading } = useExercises();
+  const [query, setQuery] = useState('');
+  const [activeGroup, setActiveGroup] = useState<MuscleGroup | null>(null);
+
+  const filtered = exercises.filter((ex) => {
+    const matchesQuery =
+      !query ||
+      ex.name.toLowerCase().includes(query.toLowerCase()) ||
+      (ex.nameEs ?? '').toLowerCase().includes(query.toLowerCase());
+    const matchesGroup = !activeGroup || ex.muscleGroup === activeGroup;
+    return matchesQuery && matchesGroup;
+  });
+
+  return (
+    <Offcanvas show={show} onHide={onHide} placement="bottom" style={{ height: '85vh' }}>
+      <Offcanvas.Header closeButton className="border-bottom pb-2">
+        <Offcanvas.Title className="fw-bold">Elegir ejercicio</Offcanvas.Title>
+      </Offcanvas.Header>
+      <Offcanvas.Body className="p-0 d-flex flex-column">
+        {/* Search bar */}
+        <div className="px-3 pt-3 pb-2 position-sticky top-0 bg-white border-bottom">
+          <div className="input-group">
+            <span className="input-group-text">
+              <Search size={16} />
+            </span>
+            <input
+              type="search"
+              className="form-control"
+              placeholder="Buscar ejercicio..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          {/* Muscle group chips */}
+          <div className="d-flex gap-1 mt-2 overflow-auto pb-1 flex-nowrap">
+            <button
+              className={`btn btn-sm flex-shrink-0 muscle-chip ${!activeGroup ? 'btn-dark' : 'btn-outline-secondary'}`}
+              onClick={() => setActiveGroup(null)}
+            >
+              Todos
+            </button>
+            {MUSCLE_GROUPS.map(([key, label]) => (
+              <button
+                key={key}
+                className={`btn btn-sm flex-shrink-0 muscle-chip ${activeGroup === key ? 'btn-dark' : 'btn-outline-secondary'}`}
+                onClick={() => setActiveGroup(activeGroup === key ? null : key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Exercise list */}
+        <div className="overflow-auto flex-grow-1">
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : filtered.length === 0 ? (
+            <p className="text-muted text-center py-4 small">No se encontraron ejercicios</p>
+          ) : (
+            <ul className="list-group list-group-flush">
+              {filtered.map((ex) => (
+                <li
+                  key={ex.id}
+                  className="list-group-item list-group-item-action py-3 px-3"
+                  style={{ cursor: 'pointer', minHeight: 56 }}
+                  onClick={() => onSelect(ex)}
+                >
+                  <div className="fw-medium">{ex.nameEs ?? ex.name}</div>
+                  <div className="small text-muted">
+                    {MUSCLE_GROUP_LABELS[ex.muscleGroup as MuscleGroup]}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Offcanvas.Body>
+    </Offcanvas>
+  );
+}

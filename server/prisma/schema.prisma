@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Usuarios ────────────────────────────────────────────────
+
+model User {
+  id             String        @id @default(cuid())
+  externalId     String        @unique
+  email          String        @unique
+  name           String
+  avatarUrl      String?
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  profile        UserProfile?
+  workouts       Workout[]
+  exercises      Exercise[]
+  bodyMetrics    BodyMetric[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("users")
+}
+
+model UserProfile {
+  id              String          @id @default(cuid())
+  userId          String          @unique
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthDate       DateTime?
+  weightKg        Float?
+  heightCm        Float?
+  fitnessGoal     FitnessGoal     @default(STRENGTH)
+  experienceLevel ExperienceLevel @default(INTERMEDIATE)
+  preferredUnit   WeightUnit      @default(KG)
+  updatedAt       DateTime        @updatedAt
+
+  @@map("user_profiles")
+}
+
+// ─── Catálogo de ejercicios ──────────────────────────────────
+
+model Exercise {
+  id               String        @id @default(cuid())
+  name             String
+  nameEs           String?
+  muscleGroup      MuscleGroup
+  secondaryMuscles MuscleGroup[]
+  equipment        Equipment     @default(BARBELL)
+  movementType     MovementType
+  isGlobal         Boolean       @default(false)
+  userId           String?
+  user             User?         @relation(fields: [userId], references: [id])
+  sets             Set[]
+  createdAt        DateTime      @default(now())
+
+  @@unique([name, userId])
+  @@map("exercises")
+}
+
+// ─── Workouts (sesiones) ─────────────────────────────────────
+
+model Workout {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime      @db.Date
+  name        String?
+  notes       String?
+  durationMin Int?
+  bodyWeight  Float?
+  status      WorkoutStatus @default(IN_PROGRESS)
+  sets        Set[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("workouts")
+}
+
+// ─── Series ─────────────────────────────────────────────────
+
+model Set {
+  id         String   @id @default(cuid())
+  workoutId  String
+  workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  setNumber  Int
+  reps       Int
+  weightKg   Float    @default(0)
+  rpe        Float?
+  rir        Int?
+  isWarmup   Boolean  @default(false)
+  isPR       Boolean  @default(false)
+  notes      String?
+  oneRepMax  Float?
+  volume     Float?
+  createdAt  DateTime @default(now())
+
+  @@map("sets")
+}
+
+// ─── Métricas corporales ─────────────────────────────────────
+
+model BodyMetric {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date     DateTime @db.Date
+  weightKg Float?
+  bodyFat  Float?
+  notes    String?
+
+  @@unique([userId, date])
+  @@map("body_metrics")
+}
+
+// ─── Suscripciones ───────────────────────────────────────────
+
+model Subscription {
+  id                  String           @id @default(cuid())
+  plan                SubscriptionPlan
+  users               User[]
+  maxWorkoutsPerMonth Int?
+  aiAnalysisEnabled   Boolean          @default(false)
+  expiresAt           DateTime?
+  createdAt           DateTime         @default(now())
+
+  @@map("subscriptions")
+}
+
+// ─── Enums ───────────────────────────────────────────────────
+
+enum MuscleGroup {
+  CHEST
+  BACK
+  LEGS
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  CORE
+  GLUTES
+  CALVES
+  FOREARMS
+  FULL_BODY
+}
+
+enum Equipment {
+  BARBELL
+  DUMBBELL
+  MACHINE
+  CABLE
+  BODYWEIGHT
+  KETTLEBELL
+  RESISTANCE_BAND
+  OTHER
+}
+
+enum MovementType {
+  PUSH
+  PULL
+  HINGE
+  SQUAT
+  CARRY
+  ISOLATION
+}
+
+enum WorkoutStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum FitnessGoal {
+  STRENGTH
+  HYPERTROPHY
+  ENDURANCE
+  WEIGHT_LOSS
+  GENERAL_FITNESS
+}
+
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum WeightUnit {
+  KG
+  LB
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  GYM
+}
