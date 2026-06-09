@@ -239,28 +239,6 @@ async function main() {
     keep_id: string;
   }
 
-  const duplicates = await prisma.$queryRaw<DuplicateExercise[]>`
-    SELECT name, MIN(id) as keep_id
-    FROM exercises
-    WHERE is_global = true
-    GROUP BY name
-    HAVING COUNT(*) > 1
-  `;
-
-  if (duplicates.length > 0) {
-    console.log(`Found ${duplicates.length} duplicate exercises. Cleaning up...`);
-    for (const dup of duplicates) {
-      await prisma.exercise.deleteMany({
-        where: {
-          isGlobal: true,
-          name: dup.name,
-          id: { not: dup.keep_id },
-        },
-      });
-    }
-    console.log('Duplicates cleaned up successfully');
-  }
-
   // Check for existing exercises to avoid duplicates
   const existingExercises = await prisma.exercise.findMany({
     where: { isGlobal: true },
