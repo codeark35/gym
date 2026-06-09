@@ -1,0 +1,49 @@
+# Railway Deployment - Ignorar archivos Docker
+
+# ==========================================
+# ARCHIVOS DOCKER (que causa el error)
+# ==========================================
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# ==========================================
+# ARCHIVOS DE DESARROLLO
+# ==========================================
+.env
+.env.local
+.env.development
+.env.test
+*.local
+
+# ==========================================  
+# DIRECTORIOS DE BUILD
+# ==========================================
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# ==========================================
+# ARCHIVOS DEL SISTEMA
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ==========================================
+# LOGS Y TEMPORALES
+# ==========================================
+logs/
+*.log
+.tmp/
+temp/
+
+# ==========================================
+# LOCK FILES (Railway maneja automáticamente)
+# ==========================================
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
