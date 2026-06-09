@@ -1,1 +1,1 @@
-web: npx prisma migrate deploy && npm run prisma:seed && node dist/src/main
+web: bash start.sh
