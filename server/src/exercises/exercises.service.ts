@@ -12,12 +12,22 @@ export class ExercisesService {
 
   async findAll(googleId: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    return this.prisma.exercise.findMany({
+    const exercises = await this.prisma.exercise.findMany({
       where: {
         OR: [{ isGlobal: true }, { userId: user.id }],
       },
       orderBy: [{ muscleGroup: 'asc' }, { name: 'asc' }],
     });
+    
+    // Log for debugging duplicates
+    const names = exercises.map(e => e.name);
+    const uniqueNames = new Set(names);
+    if (names.length !== uniqueNames.size) {
+      const duplicates = names.filter((item, index) => names.indexOf(item) !== index);
+      console.log('⚠️ Duplicate exercises found:', duplicates);
+    }
+    
+    return exercises;
   }
 
   async search(googleId: string, q: string) {
