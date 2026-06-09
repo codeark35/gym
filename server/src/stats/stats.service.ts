@@ -191,7 +191,7 @@ export class StatsService {
     });
 
     const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-    const activity = [];
+    const activity: { day: string; status: string; intensity: number }[] = [];
 
     for (let i = 0; i < 7; i++) {
       const currentDate = new Date(startOfWeek);
