@@ -234,7 +234,12 @@ async function main() {
   console.log('Seeding exercises...');
 
   // Clean up duplicate exercises by name (keep only the first one)
-  const duplicates = await prisma.$queryRaw`
+  interface DuplicateExercise {
+    name: string;
+    keep_id: string;
+  }
+
+  const duplicates = await prisma.$queryRaw<DuplicateExercise[]>`
     SELECT name, MIN(id) as keep_id
     FROM exercises
     WHERE is_global = true
