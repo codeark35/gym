@@ -30,6 +30,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
 
   // Health check endpoint (sin prefijo api/v1)
+  // Debe responder inmediatamente, sin depender de la base de datos
   app.getHttpAdapter().get('/health', (_req, res) => {
     res.status(200).send({ status: 'ok', timestamp: new Date().toISOString() });
   });
@@ -48,4 +49,9 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
   console.log(`GymTracker API running on port ${port}`);
 }
-bootstrap();
+
+// Manejo de errores para que Railway no crashee si hay problema temporal
+bootstrap().catch((err) => {
+  console.error('Fatal error during bootstrap:', err);
+  process.exit(1);
+});
