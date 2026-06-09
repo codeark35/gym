@@ -13,6 +13,9 @@ COPY . .
 
 RUN npx prisma generate
 RUN npm run build
+# Verificar que se generó correctamente
+RUN ls -la dist/
+RUN ls -la dist/main* || echo "No dist/main found"
 
 # Production stage
 FROM node:22-alpine
@@ -24,6 +27,10 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
+
+# Verificar estructura
+RUN ls -la dist/
+RUN ls -la dist/main* || echo "No dist/main found"
 
 # Generar Prisma client en producción también
 RUN npx prisma generate
