@@ -47,7 +47,21 @@ async function main() {
       
       console.log(`  - "${name}": ${allWithName.length} total, keeping ${keepId}, deleting ${idsToDelete.length}`);
       
-      // Delete duplicates
+      // Reassign any sets from duplicate exercises to the original exercise
+      const updatedSets = await prisma.set.updateMany({
+        where: {
+          exerciseId: { in: idsToDelete },
+        },
+        data: {
+          exerciseId: keepId,
+        },
+      });
+      
+      if (updatedSets.count > 0) {
+        console.log(`    🔄 Reassigned ${updatedSets.count} sets to original exercise`);
+      }
+      
+      // Now delete the duplicates (no foreign key constraints since sets were reassigned)
       const deleted = await prisma.exercise.deleteMany({
         where: {
           id: { in: idsToDelete },
