@@ -31,7 +31,7 @@ async function bootstrap() {
 
   // Health check endpoint (sin prefijo api/v1)
   // Debe responder inmediatamente, sin depender de la base de datos
-  app.getHttpAdapter().get('/health', (_req, res) => {
+  app.getHttpAdapter().getInstance().get('/health', (_req, res) => {
     res.status(200).send({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
