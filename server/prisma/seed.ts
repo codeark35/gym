@@ -233,17 +233,29 @@ const exercises = [
 async function main() {
   console.log('Seeding exercises...');
 
-  await prisma.exercise.createMany({
-    data: exercises.map(e => ({
-      ...e,
-      isGlobal: true,
-      secondaryMuscles: [],
-      userId: null,
-    })),
-    skipDuplicates: true,
+  // Check for existing exercises to avoid duplicates
+  const existingExercises = await prisma.exercise.findMany({
+    where: { isGlobal: true },
+    select: { name: true },
   });
+  const existingNames = new Set(existingExercises.map(e => e.name));
 
-  console.log(`Seeded ${exercises.length} exercises`);
+  const newExercises = exercises.filter(e => !existingNames.has(e.name));
+
+  if (newExercises.length > 0) {
+    await prisma.exercise.createMany({
+      data: newExercises.map(e => ({
+        ...e,
+        isGlobal: true,
+        secondaryMuscles: [],
+        userId: null,
+      })),
+      skipDuplicates: true,
+    });
+    console.log(`Seeded ${newExercises.length} new exercises (${existingNames.size} already existed)`);
+  } else {
+    console.log(`All ${exercises.length} exercises already exist, no new exercises seeded`);
+  }
 }
 
 main()
