@@ -4,6 +4,8 @@ import { useAuth } from '../../../hooks/useAuth';
 import { Dumbbell, Zap, Shield, Infinity, Code2, AlertTriangle } from 'lucide-react';
 import api from '../../../api/axios';
 
+const isDevMode = import.meta.env.DEV || import.meta.env.VITE_DEV_LOGIN === 'true';
+
 export default function LoginPage() {
   const { login, isAuthenticated, isFirebaseReady, googleLogin } = useAuth();
   const navigate = useNavigate();
@@ -90,7 +92,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {!isFirebaseReady && (
+          {isDevMode && !isFirebaseReady && (
             <div className="alert alert-warning py-2 small mb-3">
               <div className="d-flex align-items-center gap-2 mb-1">
                 <AlertTriangle size={14} />
@@ -132,34 +134,38 @@ export default function LoginPage() {
             100% gratuito. Sin suscripciones ni límites.
           </p>
 
-          <div className="d-flex align-items-center gap-3 mb-3">
-            <div className="flex-grow-1" style={{ height: 1, background: '#e2e8f0' }} />
-            <span className="small text-muted" style={{ fontSize: '0.75rem' }}>o</span>
-            <div className="flex-grow-1" style={{ height: 1, background: '#e2e8f0' }} />
-          </div>
+          {isDevMode && (
+            <>
+              <div className="d-flex align-items-center gap-3 mb-3">
+                <div className="flex-grow-1" style={{ height: 1, background: '#e2e8f0' }} />
+                <span className="small text-muted" style={{ fontSize: '0.75rem' }}>o</span>
+                <div className="flex-grow-1" style={{ height: 1, background: '#e2e8f0' }} />
+              </div>
 
-          {/* Dev Login */}
-          <button
-            className="btn w-100 btn-action d-flex align-items-center justify-content-center gap-2"
-            onClick={handleDevLogin}
-            disabled={loading}
-            style={{
-              background: 'linear-gradient(135deg, #1e3a5f, #2d4a6f)',
-              border: 'none',
-              color: 'white',
-              minHeight: 52,
-            }}
-          >
-            {loading ? (
-              <span className="spinner-border spinner-border-sm me-2" />
-            ) : (
-              <Code2 size={18} />
-            )}
-            Acceso de desarrollo
-          </button>
-          <p className="text-center small mt-2 mb-0" style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>
-            Para testear sin configurar Firebase
-          </p>
+              {/* Dev Login */}
+              <button
+                className="btn w-100 btn-action d-flex align-items-center justify-content-center gap-2"
+                onClick={handleDevLogin}
+                disabled={loading}
+                style={{
+                  background: 'linear-gradient(135deg, #1e3a5f, #2d4a6f)',
+                  border: 'none',
+                  color: 'white',
+                  minHeight: 52,
+                }}
+              >
+                {loading ? (
+                  <span className="spinner-border spinner-border-sm me-2" />
+                ) : (
+                  <Code2 size={18} />
+                )}
+                Acceso de desarrollo
+              </button>
+              <p className="text-center small mt-2 mb-0" style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>
+                Para testear sin configurar Firebase
+              </p>
+            </>
+          )}
         </div>
 
         {/* Features */}
