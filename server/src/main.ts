@@ -35,9 +35,9 @@ async function bootstrap() {
     res.status(200).send({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  const corsOrigins = process.env.CORS_ORIGINS?.split(',') ?? [
-    'http://localhost:5173',
-  ];
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(o => o.trim().replace(/^"|"$/g, ''))
+    : ['http://localhost:5173'];
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
