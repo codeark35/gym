@@ -1,11 +1,11 @@
 import AppShell from '../../../components/layout/AppShell';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { useStats } from '../../stats/hooks/useStats';
+import { useStats, useWeeklyActivity, useRegisterRestDay } from '../../stats/hooks/useStats';
 import { useTodayWorkout, useWorkoutsForDate } from '../../workouts/hooks/useWorkouts';
 import { todayISO } from '../../../utils/date.utils';
 import {
   Dumbbell, TrendingUp, ArrowRight, Flame, CheckCircle2,
-  CircleDot, Play, Zap, User, Target, CalendarDays
+  CircleDot, Play, Zap, User, Target, CalendarDays, Moon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
@@ -15,6 +15,8 @@ export default function DashboardPage() {
   const { data: stats, isLoading } = useStats();
   const { data: todayWorkout } = useTodayWorkout();
   const { data: todayWorkouts } = useWorkoutsForDate(todayISO());
+  const { data: weeklyActivity } = useWeeklyActivity();
+  const registerRestDay = useRegisterRestDay();
 
   const completedCount = todayWorkouts?.filter((w) => w.status === 'COMPLETED').length ?? 0;
   const hasActiveWorkout = todayWorkout?.status === 'IN_PROGRESS';
@@ -24,9 +26,12 @@ export default function DashboardPage() {
   });
   const firstName = user?.name?.split(' ')[0] ?? 'Atleta';
 
-  // Mock weekly activity data
   const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-  const weekActivity = [40, 65, 30, 80, 55, 90, hasActiveWorkout || completedCount > 0 ? 70 : 0];
+
+  const handleRestDay = () => {
+    const today = new Date().toISOString().split('T')[0];
+    registerRestDay.mutate(today);
+  };
 
   return (
     <AppShell>
@@ -143,19 +148,39 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div className="d-flex align-items-end gap-1" style={{ height: 60 }}>
-              {weekActivity.map((h, i) => (
+              {(weeklyActivity ?? []).map((day, i) => (
                 <div key={i} className="flex-fill d-flex flex-column align-items-center gap-1">
                   <div
                     className="w-100 rounded-top"
                     style={{
-                      height: `${h}%`,
-                      background: h > 60 ? 'linear-gradient(to top, #2d6a4f, #34d399)' : h > 30 ? 'linear-gradient(to top, #1e3a5f, #4338ca)' : '#e2e8f0',
+                      height: `${day.intensity}%`,
+                      background: day.status === 'completed' ? 'linear-gradient(to top, #2d6a4f, #34d399)' : 
+                                  day.status === 'active' ? 'linear-gradient(to top, #f59e0b, #fbbf24)' : 
+                                  day.status === 'rest' ? 'linear-gradient(to top, #475569, #94a3b8)' : '#e2e8f0',
                       borderRadius: 4, minHeight: 4, transition: 'height 0.3s ease',
                     }}
                   />
                   <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>{weekDays[i]}</span>
                 </div>
               ))}
+            </div>
+            <div className="d-flex align-items-center gap-2 mt-2">
+              <div className="d-flex align-items-center gap-1">
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: '#2d6a4f' }} />
+                <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Entreno</span>
+              </div>
+              <div className="d-flex align-items-center gap-1">
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: '#f59e0b' }} />
+                <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Activo</span>
+              </div>
+              <div className="d-flex align-items-center gap-1">
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: '#475569' }} />
+                <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Descanso</span>
+              </div>
+              <div className="d-flex align-items-center gap-1">
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: '#e2e8f0' }} />
+                <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Vacío</span>
+              </div>
             </div>
           </div>
         </div>
@@ -188,10 +213,22 @@ export default function DashboardPage() {
           <ArrowRight size={16} className="ms-2" />
         </Link>
       </div>
-      <Link to="/workouts" className="btn btn-outline-secondary w-100 btn-action d-flex align-items-center justify-content-center">
-        <CalendarDays size={18} className="me-2" />
-        Ver historial de entrenamientos
-      </Link>
+      <div className="d-flex gap-2 mb-2">
+        <Link to="/workouts" className="btn btn-outline-secondary w-100 btn-action d-flex align-items-center justify-content-center">
+          <CalendarDays size={18} className="me-2" />
+          Ver historial de entrenamientos
+        </Link>
+      </div>
+      {!hasActiveWorkout && completedCount === 0 && (
+        <button 
+          onClick={handleRestDay}
+          className="btn btn-outline-info w-100 btn-action d-flex align-items-center justify-content-center"
+          disabled={registerRestDay.isPending}
+        >
+          <Moon size={18} className="me-2" />
+          {registerRestDay.isPending ? 'Registrando...' : 'Registrar día de descanso'}
+        </button>
+      )}
     </AppShell>
   );
 }

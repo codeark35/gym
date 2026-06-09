@@ -156,4 +156,82 @@ export class StatsService {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([week, totalVolume]) => ({ week, totalVolume: Math.round(totalVolume) }));
   }
+
+  async getWeeklyActivity(googleId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get start of week (Monday)
+    const startOfWeek = new Date(today);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+    // Get workouts for this week
+    const workouts = await this.prisma.workout.findMany({
+      where: {
+        userId: user.id,
+        date: { gte: startOfWeek, lte: endOfWeek },
+      },
+      select: { date: true, status: true },
+    });
+
+    // Get rest days for this week
+    const restDays = await this.prisma.restDay.findMany({
+      where: {
+        userId: user.id,
+        date: { gte: startOfWeek, lte: endOfWeek },
+      },
+      select: { date: true },
+    });
+
+    const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+    const activity = [];
+
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(startOfWeek);
+      currentDate.setDate(currentDate.getDate() + i);
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      const workout = workouts.find(w => w.date.toISOString().split('T')[0] === dateStr);
+      const restDay = restDays.find(r => r.date.toISOString().split('T')[0] === dateStr);
+      
+      if (workout && workout.status === 'COMPLETED') {
+        activity.push({ day: days[i], status: 'completed', intensity: 100 });
+      } else if (workout && workout.status === 'IN_PROGRESS') {
+        activity.push({ day: days[i], status: 'active', intensity: 70 });
+      } else if (restDay) {
+        activity.push({ day: days[i], status: 'rest', intensity: 20 });
+      } else {
+        activity.push({ day: days[i], status: 'empty', intensity: 0 });
+      }
+    }
+
+    return activity;
+  }
+
+  async registerRestDay(googleId: string, date?: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
+    const restDate = date ? new Date(date) : new Date();
+    restDate.setHours(0, 0, 0, 0);
+
+    return this.prisma.restDay.upsert({
+      where: {
+        userId_date: {
+          userId: user.id,
+          date: restDate,
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        date: restDate,
+      },
+    });
+  }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards, Body } from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -26,5 +26,15 @@ export class StatsController {
   @Get('volume-weekly')
   getVolumeWeekly(@CurrentUser() user: any) {
     return this.statsService.getVolumeWeekly(user.googleId);
+  }
+
+  @Get('weekly-activity')
+  getWeeklyActivity(@CurrentUser() user: any) {
+    return this.statsService.getWeeklyActivity(user.googleId);
+  }
+
+  @Post('rest-day')
+  registerRestDay(@CurrentUser() user: any, @Body('date') date: string) {
+    return this.statsService.registerRestDay(user.googleId, date);
   }
 }
