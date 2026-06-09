@@ -4,7 +4,7 @@ import { MUSCLE_GROUP_LABELS } from '../../../types/workout.types';
 
 import { useAddSet } from '../hooks/useWorkouts';
 import SetRow from './SetRow';
-import { Plus, Timer, Minus, ChevronDown } from 'lucide-react';
+import { Plus, Timer, Minus, ChevronDown, ChevronUp, Maximize2, Minimize2 } from 'lucide-react';
 
 interface ExerciseCardProps {
   exerciseId: string;
@@ -76,9 +76,13 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
   const [restTime, setRestTime] = useState(90);
   const [showTimer, setShowTimer] = useState(false);
   const [showRestSelector, setShowRestSelector] = useState(false);
+  // Collapse by default if exercise has sets (completed), keep expanded if empty (active)
+  const [isCollapsed, setIsCollapsed] = useState(sets.length > 0);
 
   const color = getMuscleColor(exercise.muscleGroup as MuscleGroup);
   const totalVol = sets.reduce((sum, s) => sum + (s.volume ?? 0), 0);
+  const bestWeight = sets.length > 0 ? Math.max(...sets.map(s => s.weightKg)) : 0;
+  const totalReps = sets.reduce((sum, s) => sum + s.reps, 0);
 
   const handleAddSet = () => {
     const setNumber = sets.length + 1;
@@ -94,15 +98,21 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
     setReps((r) => Math.max(1, r + delta));
   };
 
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
   return (
     <div className="card mb-3" style={{ border: 'none', borderRadius: 16, overflow: 'hidden' }}>
-      {/* Header */}
+      {/* Header - clickable to collapse/expand */}
       <div
         className="card-header d-flex align-items-center justify-content-between py-2 px-3"
+        onClick={toggleCollapse}
         style={{
           background: color.bg,
-          borderBottom: `1px solid ${color.border}`,
-          borderRadius: '16px 16px 0 0',
+          borderBottom: isCollapsed ? 'none' : `1px solid ${color.border}`,
+          borderRadius: isCollapsed ? 16 : '16px 16px 0 0',
+          cursor: 'pointer',
         }}
       >
         <div className="d-flex align-items-center gap-2 overflow-hidden">
@@ -139,50 +149,110 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
           </div>
         </div>
 
-        {/* Rest time selector */}
-        <div className="position-relative">
+        <div className="d-flex align-items-center gap-2">
+          {/* Collapse/expand button */}
           <button
-            className="btn btn-sm d-flex align-items-center gap-1"
-            onClick={() => setShowRestSelector(!showRestSelector)}
+            className="btn btn-sm d-flex align-items-center justify-content-center"
+            onClick={(e) => { e.stopPropagation(); toggleCollapse(); }}
             style={{
               borderRadius: 8,
               background: 'rgba(255,255,255,0.5)',
               border: `1px solid ${color.border}`,
               color: color.text,
-              fontSize: '0.75rem',
-              padding: '0.25rem 0.5rem',
+              width: 32,
+              height: 32,
+              padding: 0,
             }}
           >
-            <Timer size={12} />
-            {restTime}s
-            <ChevronDown size={12} />
+            {isCollapsed ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
           </button>
-          {showRestSelector && (
-            <div className="position-absolute end-0 mt-1" style={{ zIndex: 10, minWidth: 100 }}>
-              <div className="card" style={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-                {[60, 90, 120, 180].map((t) => (
-                  <button
-                    key={t}
-                    className="btn btn-sm text-start"
-                    onClick={() => { setRestTime(t); setShowRestSelector(false); }}
-                    style={{
-                      background: restTime === t ? color.bg : 'white',
-                      color: restTime === t ? color.text : '#1e293b',
-                      borderRadius: 0,
-                      borderBottom: '1px solid rgba(0,0,0,0.05)',
-                      fontSize: '0.8125rem',
-                    }}
-                  >
-                    {t}s
-                  </button>
-                ))}
-              </div>
+
+          {/* Rest time selector */}
+          {!isCollapsed && (
+            <div className="position-relative">
+              <button
+                className="btn btn-sm d-flex align-items-center gap-1"
+                onClick={(e) => { e.stopPropagation(); setShowRestSelector(!showRestSelector); }}
+                style={{
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.5)',
+                  border: `1px solid ${color.border}`,
+                  color: color.text,
+                  fontSize: '0.75rem',
+                  padding: '0.25rem 0.5rem',
+                }}
+              >
+                <Timer size={12} />
+                {restTime}s
+                <ChevronDown size={12} />
+              </button>
+              {showRestSelector && (
+                <div className="position-absolute end-0 mt-1" style={{ zIndex: 10, minWidth: 100 }}>
+                  <div className="card" style={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                    {[60, 90, 120, 180].map((t) => (
+                      <button
+                        key={t}
+                        className="btn btn-sm text-start"
+                        onClick={(e) => { e.stopPropagation(); setRestTime(t); setShowRestSelector(false); }}
+                        style={{
+                          background: restTime === t ? color.bg : 'white',
+                          color: restTime === t ? color.text : '#1e293b',
+                          borderRadius: 0,
+                          borderBottom: '1px solid rgba(0,0,0,0.05)',
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                        {t}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <div className="card-body p-2">
+      {/* Collapsed summary */}
+      {isCollapsed && sets.length > 0 && (
+        <div className="card-body py-2 px-3">
+          <div className="d-flex align-items-center gap-3">
+            <div className="d-flex align-items-center gap-1">
+              <span className="fw-bold" style={{ color: color.text, fontSize: '0.875rem' }}>
+                {sets.length}
+              </span>
+              <span className="small" style={{ color: '#94a3b8', fontSize: '0.75rem' }}>series</span>
+            </div>
+            <div className="d-flex align-items-center gap-1">
+              <span className="fw-bold" style={{ color: color.text, fontSize: '0.875rem' }}>
+                {bestWeight > 0 ? bestWeight.toFixed(1) : '-'}
+              </span>
+              <span className="small" style={{ color: '#94a3b8', fontSize: '0.75rem' }}>kg max</span>
+            </div>
+            <div className="d-flex align-items-center gap-1">
+              <span className="fw-bold" style={{ color: color.text, fontSize: '0.875rem' }}>
+                {totalVol.toLocaleString()}
+              </span>
+              <span className="small" style={{ color: '#94a3b8', fontSize: '0.75rem' }}>kg vol</span>
+            </div>
+            <div className="d-flex align-items-center gap-1">
+              <span className="fw-bold" style={{ color: color.text, fontSize: '0.875rem' }}>
+                {totalReps}
+              </span>
+              <span className="small" style={{ color: '#94a3b8', fontSize: '0.75rem' }}>reps</span>
+            </div>
+          </div>
+          <div className="mt-1">
+            <span className="small" style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>
+              Tocá para expandir y ver detalles
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Expanded content */}
+      {!isCollapsed && (
+        <div className="card-body p-2">
         {/* Sets list */}
         {sets.map((s, i) => (
           <SetRow key={s.id} set={s} workoutId={workoutId} index={i} />
@@ -297,6 +367,7 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }
