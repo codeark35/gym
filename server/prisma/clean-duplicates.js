@@ -1,39 +1,67 @@
 const { PrismaClient } = require('@prisma/client');
 
 async function main() {
+  console.log('🔍 [clean-duplicates] Starting duplicate cleanup...');
   const prisma = new PrismaClient();
   try {
-    // Find duplicate exercises by name (keeping the first one created)
-    const duplicates = await prisma.$queryRaw`
-      SELECT name, MIN(id) as keep_id
-      FROM exercises
-      WHERE "isGlobal" = true
-      GROUP BY name
-      HAVING COUNT(*) > 1
-    `;
-
+    // Get all global exercises
+    const allExercises = await prisma.exercise.findMany({
+      where: { isGlobal: true },
+      select: { id: true, name: true },
+      orderBy: { id: 'asc' },
+    });
+    
+    console.log(`📊 [clean-duplicates] Total global exercises: ${allExercises.length}`);
+    
+    // Find duplicates
+    const nameMap = new Map();
+    const duplicates = [];
+    
+    for (const ex of allExercises) {
+      if (nameMap.has(ex.name)) {
+        duplicates.push({
+          name: ex.name,
+          keepId: nameMap.get(ex.name),
+          duplicateId: ex.id,
+        });
+      } else {
+        nameMap.set(ex.name, ex.id);
+      }
+    }
+    
     if (duplicates.length === 0) {
-      console.log('✅ No duplicate exercises found');
+      console.log('✅ [clean-duplicates] No duplicate exercises found');
       return;
     }
-
-    console.log(`⚠️ Found ${duplicates.length} duplicate exercises. Cleaning up...`);
     
-    for (const dup of duplicates) {
-      // Delete all duplicates except the first one
+    console.log(`⚠️ [clean-duplicates] Found ${duplicates.length} duplicate exercises. Cleaning up...`);
+    
+    // Group by name to delete all duplicates
+    const namesToClean = [...new Set(duplicates.map(d => d.name))];
+    let totalDeleted = 0;
+    
+    for (const name of namesToClean) {
+      const allWithName = allExercises.filter(e => e.name === name);
+      const keepId = allWithName[0].id;
+      const idsToDelete = allWithName.slice(1).map(e => e.id);
+      
+      console.log(`  - "${name}": ${allWithName.length} total, keeping ${keepId}, deleting ${idsToDelete.length}`);
+      
+      // Delete duplicates
       const deleted = await prisma.exercise.deleteMany({
         where: {
-          isGlobal: true,
-          name: dup.name,
-          id: { not: dup.keep_id },
+          id: { in: idsToDelete },
         },
       });
-      console.log(`  - Removed ${deleted.count} duplicates of "${dup.name}"`);
+      
+      totalDeleted += deleted.count;
+      console.log(`    ✅ Removed ${deleted.count} duplicates`);
     }
     
-    console.log('✅ Duplicates cleaned up successfully');
+    console.log(`✅ [clean-duplicates] Cleanup complete. Total removed: ${totalDeleted}`);
   } catch (error) {
-    console.error('❌ Error cleaning duplicates:', error.message);
+    console.error('❌ [clean-duplicates] Error:', error.message);
+    console.error(error);
   } finally {
     await prisma.$disconnect();
   }
