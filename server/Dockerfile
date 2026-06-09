@@ -1,30 +1,33 @@
 # Dockerfile para GymTracker Pro
-FROM node:22-alpine
+# Build stage
+FROM node:22-alpine AS builder
 
-# Instalar dependencias del sistema
-RUN apk add --no-cache openssl
-
-# Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Instalar dependencias
 RUN npm ci
 
-# Copiar código fuente
 COPY . .
 
-# Generar cliente de Prisma
 RUN npx prisma generate
-
-# Construir la aplicación
 RUN npm run build
 
-# Exponer puerto
+# Production stage
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Copiar solo lo necesario para producción
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
+
+# Generar Prisma client en producción también
+RUN npx prisma generate
+
 EXPOSE 3000
 
-# Comando de inicio
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/main"]
