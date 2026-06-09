@@ -8,6 +8,10 @@ node prisma/fix-migration.js
 # Ejecutar migraciones pendientes
 npx prisma migrate deploy
 
+# Limpiar duplicados de ejercicios
+echo "Cleaning up duplicate exercises..."
+node prisma/clean-duplicates.js
+
 # Ejecutar seed
 npm run prisma:seed
 
