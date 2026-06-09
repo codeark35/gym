@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/axios';
-import { Exercise } from '../../../types/workout.types';
+import type { Exercise } from '../../../types/workout.types';
 
 export function useExercises() {
   return useQuery({

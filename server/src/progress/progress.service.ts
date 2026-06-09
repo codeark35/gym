@@ -9,8 +9,8 @@ export class ProgressService {
     private readonly usersService: UsersService,
   ) {}
 
-  async getExerciseProgress(externalId: string, exerciseId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getExerciseProgress(googleId: string, exerciseId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     const sets = await this.prisma.set.findMany({
       where: {
@@ -40,8 +40,8 @@ export class ProgressService {
     }));
   }
 
-  async getPersonalRecord(externalId: string, exerciseId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getPersonalRecord(googleId: string, exerciseId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     return this.prisma.set.findFirst({
       where: {
@@ -54,8 +54,8 @@ export class ProgressService {
     });
   }
 
-  async getVolumeByMuscle(externalId: string, from: string, to: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getVolumeByMuscle(googleId: string, from: string, to: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     const sets = await this.prisma.set.findMany({
       where: {
@@ -80,8 +80,8 @@ export class ProgressService {
     }));
   }
 
-  async getOneRMHistory(externalId: string, exerciseId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getOneRMHistory(googleId: string, exerciseId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     const sets = await this.prisma.set.findMany({
       where: {

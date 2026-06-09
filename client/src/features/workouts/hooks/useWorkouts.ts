@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/axios';
-import { Workout, PaginatedResponse } from '../../../types/workout.types';
+import type { Workout, PaginatedResponse } from '../../../types/workout.types';
 
 export function useWorkouts(page = 1) {
-  return useQuery({
+  return useQuery<PaginatedResponse<Workout>>({
     queryKey: ['workouts', page],
     queryFn: async () => {
       const res = await api.get<{ data: PaginatedResponse<Workout> }>(
@@ -26,12 +26,23 @@ export function useWorkout(id: string) {
 }
 
 export function useTodayWorkout() {
-  return useQuery({
+  return useQuery<Workout | null>({
     queryKey: ['workout', 'today'],
     queryFn: async () => {
       const res = await api.get<{ data: Workout | null }>('/workouts/today');
-      return res.data.data ?? res.data ?? null;
+      return res.data.data ?? null;
     },
+  });
+}
+
+export function useWorkoutsForDate(date: string) {
+  return useQuery<Workout[]>({
+    queryKey: ['workouts', 'date', date],
+    queryFn: async () => {
+      const res = await api.get<{ data: Workout[] }>(`/workouts/date/${date}`);
+      return res.data.data ?? [];
+    },
+    enabled: !!date,
   });
 }
 
@@ -42,9 +53,12 @@ export function useCreateWorkout() {
       const res = await api.post<{ data: Workout }>('/workouts', data);
       return res.data.data ?? res.data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['workouts'] });
       qc.invalidateQueries({ queryKey: ['workout', 'today'] });
+      if (vars.date) {
+        qc.invalidateQueries({ queryKey: ['workouts', 'date', vars.date] });
+      }
     },
   });
 }
@@ -57,6 +71,7 @@ export function useUpdateWorkout() {
       return res.data.data ?? res.data;
     },
     onSuccess: (_data, vars) => {
+      console.log('useUpdateWorkout onSuccess, invalidating queries');
       qc.invalidateQueries({ queryKey: ['workout', vars.id] });
       qc.invalidateQueries({ queryKey: ['workouts'] });
       qc.invalidateQueries({ queryKey: ['workout', 'today'] });
@@ -71,6 +86,7 @@ export function useDeleteWorkout() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workouts'] });
       qc.invalidateQueries({ queryKey: ['workout', 'today'] });
+      qc.invalidateQueries({ queryKey: ['workouts', 'date'] });
     },
   });
 }
@@ -93,9 +109,11 @@ export function useAddSet() {
       const res = await api.post(`/workouts/${workoutId}/sets`, data);
       return res.data.data ?? res.data;
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ['workout', vars.workoutId] });
+    onSuccess: () => {
+      // Invalidar todas las queries de workout activo para que useActiveWorkout se refetche
+      qc.invalidateQueries({ queryKey: ['workout', 'active'] });
       qc.invalidateQueries({ queryKey: ['workout', 'today'] });
+      qc.invalidateQueries({ queryKey: ['workouts'] });
     },
   });
 }
@@ -115,8 +133,9 @@ export function useUpdateSet() {
       const res = await api.patch(`/workouts/${workoutId}/sets/${setId}`, data);
       return res.data.data ?? res.data;
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ['workout', vars.workoutId] });
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workout', 'active'] });
+      qc.invalidateQueries({ queryKey: ['workouts'] });
     },
   });
 }
@@ -125,10 +144,13 @@ export function useDeleteSet() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ workoutId, setId }: { workoutId: string; setId: string }) => {
-      await api.delete(`/workouts/${workoutId}/sets/${setId}`);
+      const res = await api.delete(`/workouts/${workoutId}/sets/${setId}`);
+      return res.data;
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ['workout', vars.workoutId] });
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workout', 'active'] });
+      qc.invalidateQueries({ queryKey: ['workout', 'today'] });
+      qc.invalidateQueries({ queryKey: ['workouts'] });
     },
   });
 }

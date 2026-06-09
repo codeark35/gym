@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../../../api/axios';
-import { Stats } from '../../../types/workout.types';
+import type { Stats } from '../../../types/workout.types';
 
 export function useStats() {
   return useQuery({

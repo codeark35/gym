@@ -1,7 +1,7 @@
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot,
 } from 'recharts';
-import { ProgressEntry } from '../../../types/workout.types';
+import type { ProgressEntry } from '../../../types/workout.types';
 import { formatDate } from '../../../utils/date.utils';
 
 interface StrengthChartProps {
@@ -23,7 +23,7 @@ export default function StrengthChart({ data, metric }: StrengthChartProps) {
         <XAxis dataKey="label" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} />
         <Tooltip
-          formatter={(v: number) => [`${v} kg`, metric === 'bestOneRepMax' ? '1RM' : 'Peso']}
+          formatter={(v) => [`${v} kg`, metric === 'bestOneRepMax' ? '1RM' : 'Peso']}
         />
         <Line
           type="monotone"

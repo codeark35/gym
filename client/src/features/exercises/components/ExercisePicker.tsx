@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Offcanvas, Form } from 'react-bootstrap';
+import { Offcanvas } from 'react-bootstrap';
 import { useExercises } from '../hooks/useExercises';
-import { Exercise, MuscleGroup, MUSCLE_GROUP_LABELS } from '../../../types/workout.types';
+import type { Exercise, MuscleGroup } from '../../../types/workout.types';
+import { MUSCLE_GROUP_LABELS } from '../../../types/workout.types';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { Search } from 'lucide-react';
 

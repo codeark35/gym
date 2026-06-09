@@ -1,11 +1,13 @@
 import AppShell from '../../../components/layout/AppShell';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import MetricCard from '../../../components/ui/MetricCard';
-import { useStats, useFrequency, useVolumeWeekly } from '../hooks/useStats';
+import StatsGrid from '../components/StatsGrid';
+import StreakCard from '../components/StreakCard';
 import VolumeChart from '../../progress/components/VolumeChart';
-import { MUSCLE_GROUP_LABELS, MuscleGroup } from '../../../types/workout.types';
-import { Flame, Dumbbell, TrendingUp, Calendar } from 'lucide-react';
-import { formatVolume } from '../../../utils/volume.utils';
+import { useStats, useFrequency, useVolumeWeekly } from '../hooks/useStats';
+import type { MuscleGroup } from '../../../types/workout.types';
+import { MUSCLE_GROUP_LABELS } from '../../../types/workout.types';
+import { BarChart3, Activity, CalendarDays } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function StatsPage() {
   const { data: stats, isLoading } = useStats();
@@ -14,45 +16,53 @@ export default function StatsPage() {
 
   return (
     <AppShell>
-      <h5 className="fw-bold mb-3">Estadísticas</h5>
+      {/* Header */}
+      <div className="mb-4">
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <div style={{ width: 4, height: 20, background: 'linear-gradient(to bottom, #f59e0b, #fbbf24)', borderRadius: 2 }} />
+          <h5 className="fw-bold text-white mb-0">Estadísticas</h5>
+        </div>
+        <p className="text-white-50 small mb-0">
+          Análisis de tu rendimiento y constancia
+        </p>
+      </div>
 
       {isLoading ? (
         <LoadingSpinner />
       ) : stats ? (
         <>
-          <div className="row g-3 mb-4">
-            <div className="col-6">
-              <MetricCard label="Total workouts" value={stats.totalWorkouts} icon={<Dumbbell size={18} />} />
-            </div>
-            <div className="col-6">
-              <MetricCard label="Racha actual" value={`${stats.currentStreak} días`} icon={<Flame size={18} />} highlight={stats.currentStreak > 2} />
-            </div>
-            <div className="col-6">
-              <MetricCard label="Racha máxima" value={`${stats.longestStreak} días`} icon={<TrendingUp size={18} />} />
-            </div>
-            <div className="col-6">
-              <MetricCard label="Vol. esta semana" value={formatVolume(stats.weeklyVolumeKg)} icon={<Calendar size={18} />} />
-            </div>
+          {/* Stats Section */}
+          <div className="d-flex align-items-center gap-2 mb-3">
+            <div style={{ width: 4, height: 20, background: 'linear-gradient(to bottom, #1e3a5f, #4338ca)', borderRadius: 2 }} />
+            <h6 className="fw-bold text-white mb-0 text-uppercase" style={{ letterSpacing: 1, fontSize: '0.8125rem' }}>
+              Resumen
+            </h6>
           </div>
+          <StatsGrid stats={stats} />
 
-          {/* Streak card */}
-          <div className="card mb-4 text-center">
-            <div className="card-body py-4">
-              <div className="streak-number text-primary">{stats.currentStreak}</div>
-              <div className="fw-semibold">días de racha</div>
-              <div className="small text-muted mt-1">Máxima: {stats.longestStreak} días</div>
-              {stats.currentStreak > 0 && (
-                <div className="mt-2">
-                  {'🔥'.repeat(Math.min(stats.currentStreak, 10))}
-                </div>
-              )}
+          {/* Streak Section */}
+          <div className="mt-4">
+            <div className="d-flex align-items-center gap-2 mb-3">
+              <div style={{ width: 4, height: 20, background: 'linear-gradient(to bottom, #f59e0b, #fbbf24)', borderRadius: 2 }} />
+              <h6 className="fw-bold text-white mb-0 text-uppercase" style={{ letterSpacing: 1, fontSize: '0.8125rem' }}>
+                Racha
+              </h6>
             </div>
+            <StreakCard current={stats.currentStreak} longest={stats.longestStreak} />
           </div>
 
           {/* Muscle frequency */}
           {frequency && frequency.length > 0 && (
-            <div className="card mb-4">
-              <div className="card-header fw-semibold py-2">Frecuencia por músculo (8 semanas)</div>
+            <div className="card mb-4" style={{ border: 'none', borderRadius: 16 }}>
+              <div className="card-header fw-semibold py-3 d-flex align-items-center gap-2" style={{ borderRadius: '16px 16px 0 0' }}>
+                <div
+                  className="d-flex align-items-center justify-content-center rounded-circle"
+                  style={{ width: 28, height: 28, background: 'rgba(67, 56, 202, 0.1)' }}
+                >
+                  <Activity size={14} style={{ color: '#4338ca' }} />
+                </div>
+                <span>Frecuencia por músculo (8 semanas)</span>
+              </div>
               <div className="card-body p-0">
                 <ul className="list-group list-group-flush">
                   {[...frequency]
@@ -62,13 +72,17 @@ export default function StatsPage() {
                         <span className="flex-grow-1 small fw-medium">
                           {MUSCLE_GROUP_LABELS[f.muscleGroup as MuscleGroup] ?? f.muscleGroup}
                         </span>
-                        <div className="progress flex-grow-1 mx-2" style={{ height: 8 }}>
+                        <div className="progress flex-grow-1 mx-2" style={{ height: 8, borderRadius: 4 }}>
                           <div
-                            className="progress-bar bg-dark"
-                            style={{ width: `${Math.min((f.totalSets / (frequency[0]?.totalSets || 1)) * 100, 100)}%` }}
+                            className="progress-bar"
+                            style={{
+                              width: `${Math.min((f.totalSets / (frequency[0]?.totalSets || 1)) * 100, 100)}%`,
+                              background: 'linear-gradient(90deg, #1e3a5f, #4338ca)',
+                              borderRadius: 4,
+                            }}
                           />
                         </div>
-                        <span className="small text-muted ms-2" style={{ minWidth: 40, textAlign: 'right' }}>
+                        <span className="small ms-2" style={{ minWidth: 40, textAlign: 'right', color: '#64748b', fontWeight: 500 }}>
                           {f.totalSets} series
                         </span>
                       </li>
@@ -80,18 +94,36 @@ export default function StatsPage() {
 
           {/* Weekly volume chart */}
           {weeklyVolume && weeklyVolume.length > 0 && (
-            <div className="card">
-              <div className="card-header fw-semibold py-2">Volumen semanal</div>
+            <div className="card" style={{ border: 'none', borderRadius: 16 }}>
+              <div className="card-header fw-semibold py-3 d-flex align-items-center gap-2" style={{ borderRadius: '16px 16px 0 0' }}>
+                <div
+                  className="d-flex align-items-center justify-content-center rounded-circle"
+                  style={{ width: 28, height: 28, background: 'rgba(30, 58, 95, 0.1)' }}
+                >
+                  <BarChart3 size={14} style={{ color: '#1e3a5f' }} />
+                </div>
+                <span>Volumen semanal</span>
+              </div>
               <div className="card-body p-2">
                 <VolumeChart
                   data={weeklyVolume.map((d) => ({ week: d.week, totalVolume: d.totalVolume }))}
-                  xKey="week"
                 />
               </div>
             </div>
           )}
         </>
       ) : null}
+
+      {/* Link to history */}
+      <div className="mt-4 mb-2">
+        <Link
+          to="/workouts"
+          className="btn btn-outline-light w-100 btn-action d-flex align-items-center justify-content-center"
+        >
+          <CalendarDays size={18} className="me-2" />
+          Ver historial completo
+        </Link>
+      </div>
     </AppShell>
   );
 }

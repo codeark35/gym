@@ -1,33 +1,45 @@
-import { Dumbbell, LogOut } from 'lucide-react';
+import { Dumbbell } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 export default function TopBar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   return (
-    <nav className="navbar navbar-light bg-white border-bottom sticky-top">
-      <div className="container-fluid">
-        <span className="navbar-brand d-flex align-items-center gap-2 fw-bold">
-          <Dumbbell size={22} />
-          GymTracker Pro
+    <nav className="top-bar sticky-top">
+      <div className="container-fluid d-flex align-items-center justify-content-between">
+        <span className="d-flex align-items-center gap-2 fw-bold text-white" style={{ fontSize: '1.125rem' }}>
+          <div
+            className="d-flex align-items-center justify-content-center"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: '#1e3a5f',
+            }}
+          >
+            <Dumbbell size={18} className="text-white" />
+          </div>
+          <span className="d-none d-sm-inline">GymTracker Pro</span>
         </span>
         {user && (
           <div className="d-flex align-items-center gap-2">
-            <span className="small text-muted d-none d-sm-inline">{user.name}</span>
-            <button
-              className="btn btn-sm btn-outline-secondary"
-              onClick={handleLogout}
-              title="Cerrar sesión"
+            <span className="small text-white-50 d-none d-sm-inline">{user.name}</span>
+            <div
+              className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+              style={{
+                width: 32,
+                height: 32,
+background: '#1e3a5f',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+              }}
+              onClick={() => navigate('/profile')}
+              title="Mi perfil"
             >
-              <LogOut size={16} />
-            </button>
+              {user.name?.[0]?.toUpperCase() ?? 'U'}
+            </div>
           </div>
         )}
       </div>

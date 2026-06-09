@@ -11,21 +11,21 @@ export class ExercisesController {
 
   @Get()
   findAll(@CurrentUser() user: any) {
-    return this.exercisesService.findAll(user.externalId);
+    return this.exercisesService.findAll(user.googleId);
   }
 
   @Get('search')
   search(@CurrentUser() user: any, @Query('q') q: string) {
-    return this.exercisesService.search(user.externalId, q ?? '');
+    return this.exercisesService.search(user.googleId, q ?? '');
   }
 
   @Post()
   create(@CurrentUser() user: any, @Body() dto: CreateExerciseDto) {
-    return this.exercisesService.create(user.externalId, dto);
+    return this.exercisesService.create(user.googleId, dto);
   }
 
   @Get(':id/history')
   getHistory(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.exercisesService.getHistory(user.externalId, id);
+    return this.exercisesService.getHistory(user.googleId, id);
   }
 }

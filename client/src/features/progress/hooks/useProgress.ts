@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../../../api/axios';
-import { ProgressEntry } from '../../../types/workout.types';
+import type { ProgressEntry } from '../../../types/workout.types';
 
 export function useExerciseProgress(exerciseId: string) {
   return useQuery({

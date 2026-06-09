@@ -13,7 +13,7 @@ export default function MobileNav() {
   const location = useLocation();
 
   return (
-    <nav className="navbar fixed-bottom bg-white border-top bottom-nav d-lg-none px-1">
+    <nav className="navbar fixed-bottom bottom-nav d-lg-none px-1">
       <div className="container-fluid justify-content-around">
         {tabs.map(({ to, label, icon: Icon }) => {
           const isActive =
@@ -26,7 +26,7 @@ export default function MobileNav() {
               to={to}
               className={`nav-link text-center flex-fill ${isActive ? 'active' : ''}`}
             >
-              <Icon size={22} />
+              <Icon size={24} />
               <div>{label}</div>
             </NavLink>
           );

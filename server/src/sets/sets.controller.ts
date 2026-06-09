@@ -24,7 +24,7 @@ export class SetsController {
     @Param('workoutId') workoutId: string,
     @Body() dto: CreateSetDto,
   ) {
-    return this.setsService.create(user.externalId, workoutId, dto);
+    return this.setsService.create(user.googleId, workoutId, dto);
   }
 
   @Post('bulk')
@@ -33,12 +33,12 @@ export class SetsController {
     @Param('workoutId') workoutId: string,
     @Body() dto: BulkCreateSetsDto,
   ) {
-    return this.setsService.bulkCreate(user.externalId, workoutId, dto.sets);
+    return this.setsService.bulkCreate(user.googleId, workoutId, dto.sets);
   }
 
   @Get()
   findAll(@CurrentUser() user: any, @Param('workoutId') workoutId: string) {
-    return this.setsService.findAll(user.externalId, workoutId);
+    return this.setsService.findAll(user.googleId, workoutId);
   }
 
   @Patch(':setId')
@@ -48,7 +48,7 @@ export class SetsController {
     @Param('setId') setId: string,
     @Body() dto: UpdateSetDto,
   ) {
-    return this.setsService.update(user.externalId, workoutId, setId, dto);
+    return this.setsService.update(user.googleId, workoutId, setId, dto);
   }
 
   @Delete(':setId')
@@ -57,6 +57,6 @@ export class SetsController {
     @Param('workoutId') workoutId: string,
     @Param('setId') setId: string,
   ) {
-    return this.setsService.remove(user.externalId, workoutId, setId);
+    return this.setsService.remove(user.googleId, workoutId, setId);
   }
 }

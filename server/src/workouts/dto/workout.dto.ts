@@ -1,5 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsNumber, IsDateString } from 'class-validator';
-import { WorkoutStatus } from '@prisma/client';
+import { IsOptional, IsString, IsIn, IsNumber, IsDateString } from 'class-validator';
 
 export class CreateWorkoutDto {
   @IsOptional()
@@ -37,6 +36,6 @@ export class UpdateWorkoutDto {
   bodyWeight?: number;
 
   @IsOptional()
-  @IsEnum(WorkoutStatus)
-  status?: WorkoutStatus;
+  @IsIn(['IN_PROGRESS', 'COMPLETED', 'CANCELLED'])
+  status?: string;
 }

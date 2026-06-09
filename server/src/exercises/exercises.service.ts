@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UsersService } from '../users/users.service';
@@ -10,8 +10,8 @@ export class ExercisesService {
     private readonly usersService: UsersService,
   ) {}
 
-  async findAll(externalId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async findAll(googleId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
     return this.prisma.exercise.findMany({
       where: {
         OR: [{ isGlobal: true }, { userId: user.id }],
@@ -20,8 +20,8 @@ export class ExercisesService {
     });
   }
 
-  async search(externalId: string, q: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async search(googleId: string, q: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
     return this.prisma.exercise.findMany({
       where: {
         OR: [{ isGlobal: true }, { userId: user.id }],
@@ -35,29 +35,16 @@ export class ExercisesService {
     });
   }
 
-  async create(externalId: string, dto: CreateExerciseDto) {
-    const user = await this.usersService.findByExternalId(externalId);
-
-    // Check custom exercise limit for FREE plan
-    const subscription = user.subscription;
-    if (!subscription || subscription.plan === 'FREE') {
-      const count = await this.prisma.exercise.count({
-        where: { userId: user.id },
-      });
-      if (count >= 5) {
-        throw new ForbiddenException(
-          'El plan gratuito permite hasta 5 ejercicios personalizados. Actualizá a Pro.',
-        );
-      }
-    }
+  async create(googleId: string, dto: CreateExerciseDto) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     return this.prisma.exercise.create({
       data: { ...dto, userId: user.id, isGlobal: false },
     });
   }
 
-  async getHistory(externalId: string, exerciseId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getHistory(googleId: string, exerciseId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
     return this.prisma.set.findMany({
       where: {
         exerciseId,

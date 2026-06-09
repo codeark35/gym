@@ -17,8 +17,8 @@ export class SetsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  private async getUserId(externalId: string): Promise<string> {
-    const user = await this.usersService.findByExternalId(externalId);
+  private async getUserId(googleId: string): Promise<string> {
+    const user = await this.usersService.findByGoogleId(googleId);
     return user.id;
   }
 
@@ -30,8 +30,8 @@ export class SetsService {
     return workout;
   }
 
-  async create(externalId: string, workoutId: string, dto: CreateSetDto) {
-    const userId = await this.getUserId(externalId);
+  async create(googleId: string, workoutId: string, dto: CreateSetDto) {
+    const userId = await this.getUserId(googleId);
     await this.ensureWorkoutOwner(workoutId, userId);
 
     const oneRepMax = calcEpley(dto.weightKg, dto.reps);
@@ -64,16 +64,16 @@ export class SetsService {
     });
   }
 
-  async bulkCreate(externalId: string, workoutId: string, dtos: CreateSetDto[]) {
+  async bulkCreate(googleId: string, workoutId: string, dtos: CreateSetDto[]) {
     const results: Awaited<ReturnType<typeof this.create>>[] = [];
     for (const dto of dtos) {
-      results.push(await this.create(externalId, workoutId, dto));
+      results.push(await this.create(googleId, workoutId, dto));
     }
     return results;
   }
 
-  async findAll(externalId: string, workoutId: string) {
-    const userId = await this.getUserId(externalId);
+  async findAll(googleId: string, workoutId: string) {
+    const userId = await this.getUserId(googleId);
     await this.ensureWorkoutOwner(workoutId, userId);
     return this.prisma.set.findMany({
       where: { workoutId },
@@ -82,8 +82,8 @@ export class SetsService {
     });
   }
 
-  async update(externalId: string, workoutId: string, setId: string, dto: UpdateSetDto) {
-    const userId = await this.getUserId(externalId);
+  async update(googleId: string, workoutId: string, setId: string, dto: UpdateSetDto) {
+    const userId = await this.getUserId(googleId);
     await this.ensureWorkoutOwner(workoutId, userId);
 
     const existing = await this.prisma.set.findFirst({
@@ -114,8 +114,8 @@ export class SetsService {
     return result;
   }
 
-  async remove(externalId: string, workoutId: string, setId: string) {
-    const userId = await this.getUserId(externalId);
+  async remove(googleId: string, workoutId: string, setId: string) {
+    const userId = await this.getUserId(googleId);
     await this.ensureWorkoutOwner(workoutId, userId);
 
     const set = await this.prisma.set.findFirst({ where: { id: setId, workoutId } });

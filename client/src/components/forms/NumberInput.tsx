@@ -1,4 +1,4 @@
-import { useRef, ChangeEvent } from 'react';
+import { useRef, type ChangeEvent } from 'react';
 
 interface NumberInputProps {
   value: number;

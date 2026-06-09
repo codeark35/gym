@@ -1,46 +1,46 @@
 import { Injectable } from '@nestjs/common';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { AnalysisType } from './dto/ai.dto';
 
 @Injectable()
 export class AiService {
-  private anthropic: Anthropic;
+  private genai: GoogleGenAI;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
   ) {
-    this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    this.genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? '' });
   }
 
-  async analyze(externalId: string, type: AnalysisType, userQuestion?: string): Promise<string> {
-    const context = await this.buildUserContext(externalId);
+  async analyze(googleId: string, type: AnalysisType, userQuestion?: string): Promise<string> {
+    const context = await this.buildUserContext(googleId);
 
     const systemPrompt = `Sos un entrenador personal experto en entrenamiento de fuerza.
 Analizás datos reales de entrenamiento y das feedback conciso, accionable y motivador.
-Respondé siempre en español rioplatense informal. Máximo 250 palabras.
-No inventes datos que no estén en el contexto.`;
+Respondé siempre en español rioplatense informal (che, boludo, vamos, etc.).
+Máximo 250 palabras. No inventes datos que no estén en el contexto.`;
 
     const userPrompt = userQuestion
       ? `${userQuestion}\n\nContexto del usuario:\n${context}`
       : this.buildPromptByType(type, context);
 
-    const response = await this.anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const response = await this.genai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: userPrompt,
+      config: {
+        systemInstruction: systemPrompt,
+        maxOutputTokens: 1024,
+      },
     });
 
-    return response.content[0].type === 'text' ? response.content[0].text : '';
+    return response.text ?? '';
   }
 
-  async chat(externalId: string, message: string): Promise<string> {
-    return this.analyze(externalId, AnalysisType.GENERAL, message);
+  async chat(googleId: string, message: string): Promise<string> {
+    return this.analyze(googleId, AnalysisType.GENERAL, message);
   }
 
   private buildPromptByType(type: AnalysisType, context: string): string {
@@ -53,8 +53,8 @@ No inventes datos que no estén en el contexto.`;
     return prompts[type];
   }
 
-  private async buildUserContext(externalId: string): Promise<string> {
-    const user = await this.usersService.findByExternalId(externalId);
+  private async buildUserContext(googleId: string): Promise<string> {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     const fourWeeksAgo = new Date();
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);

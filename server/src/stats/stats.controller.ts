@@ -10,21 +10,21 @@ export class StatsController {
 
   @Get('summary')
   getSummary(@CurrentUser() user: any) {
-    return this.statsService.getSummary(user.externalId);
+    return this.statsService.getSummary(user.googleId);
   }
 
   @Get('streak')
   getStreak(@CurrentUser() user: any) {
-    return this.statsService.getStreak(user.externalId);
+    return this.statsService.getStreak(user.googleId);
   }
 
   @Get('frequency')
   getFrequency(@CurrentUser() user: any, @Query('weeks') weeks = '8') {
-    return this.statsService.getFrequency(user.externalId, parseInt(weeks));
+    return this.statsService.getFrequency(user.googleId, parseInt(weeks));
   }
 
   @Get('volume-weekly')
   getVolumeWeekly(@CurrentUser() user: any) {
-    return this.statsService.getVolumeWeekly(user.externalId);
+    return this.statsService.getVolumeWeekly(user.googleId);
   }
 }

@@ -11,16 +11,16 @@ export class UsersController {
 
   @Get('me')
   getMe(@CurrentUser() user: any) {
-    return this.usersService.findByExternalId(user.externalId);
+    return this.usersService.findByGoogleId(user.googleId);
   }
 
   @Get('me/profile')
   getProfile(@CurrentUser() user: any) {
-    return this.usersService.getProfile(user.externalId);
+    return this.usersService.getProfile(user.googleId);
   }
 
   @Patch('me/profile')
   updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
-    return this.usersService.updateProfile(user.externalId, dto);
+    return this.usersService.updateProfile(user.googleId, dto);
   }
 }

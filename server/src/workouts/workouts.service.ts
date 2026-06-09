@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
@@ -14,28 +13,8 @@ export class WorkoutsService {
     private readonly usersService: UsersService,
   ) {}
 
-  async create(externalId: string, dto: CreateWorkoutDto) {
-    const user = await this.usersService.findByExternalId(externalId);
-
-    // Check monthly limit for FREE plan
-    if (!user.subscription || user.subscription.plan === 'FREE') {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
-      const count = await this.prisma.workout.count({
-        where: {
-          userId: user.id,
-          createdAt: { gte: startOfMonth },
-        },
-      });
-
-      if (count >= 12) {
-        throw new ForbiddenException(
-          'Llegaste al límite de 12 workouts mensuales del plan gratuito.',
-        );
-      }
-    }
+  async create(googleId: string, dto: CreateWorkoutDto) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     const date = dto.date ? new Date(dto.date) : new Date();
 
@@ -51,17 +30,10 @@ export class WorkoutsService {
     });
   }
 
-  async findAll(externalId: string, page = 1, limit = 20) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async findAll(googleId: string, page = 1, limit = 20) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     const where: any = { userId: user.id };
-
-    // FREE plan: limit to last 3 months
-    if (!user.subscription || user.subscription.plan === 'FREE') {
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      where.date = { gte: threeMonthsAgo };
-    }
 
     const [data, total] = await Promise.all([
       this.prisma.workout.findMany({
@@ -80,8 +52,8 @@ export class WorkoutsService {
     };
   }
 
-  async findOne(externalId: string, id: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async findOne(googleId: string, id: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
     const workout = await this.prisma.workout.findFirst({
       where: { id, userId: user.id },
       include: { sets: { include: { exercise: true }, orderBy: { setNumber: 'asc' } } },
@@ -91,24 +63,44 @@ export class WorkoutsService {
     return workout;
   }
 
-  async findToday(externalId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async findToday(googleId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    // Find the most recent IN_PROGRESS workout for today
     return this.prisma.workout.findFirst({
       where: {
         userId: user.id,
         date: { gte: today, lt: tomorrow },
+        status: 'IN_PROGRESS',
       },
+      orderBy: { createdAt: 'desc' },
       include: { sets: { include: { exercise: true }, orderBy: { setNumber: 'asc' } } },
     });
   }
 
-  async update(externalId: string, id: string, dto: UpdateWorkoutDto) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async findAllForDate(googleId: string, dateStr: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
+    const date = new Date(dateStr);
+    date.setHours(0, 0, 0, 0);
+    const nextDay = new Date(date);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    return this.prisma.workout.findMany({
+      where: {
+        userId: user.id,
+        date: { gte: date, lt: nextDay },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { sets: { include: { exercise: true }, orderBy: { setNumber: 'asc' } } },
+    });
+  }
+
+  async update(googleId: string, id: string, dto: UpdateWorkoutDto) {
+    const user = await this.usersService.findByGoogleId(googleId);
     const workout = await this.prisma.workout.findFirst({
       where: { id, userId: user.id },
     });
@@ -116,13 +108,13 @@ export class WorkoutsService {
 
     return this.prisma.workout.update({
       where: { id },
-      data: dto,
+      data: dto as any,
       include: { sets: { include: { exercise: true } } },
     });
   }
 
-  async remove(externalId: string, id: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async remove(googleId: string, id: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
     const workout = await this.prisma.workout.findFirst({
       where: { id, userId: user.id },
     });

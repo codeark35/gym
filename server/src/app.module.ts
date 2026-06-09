@@ -10,7 +10,6 @@ import { SetsModule } from './sets/sets.module';
 import { ProgressModule } from './progress/progress.module';
 import { StatsModule } from './stats/stats.module';
 import { AiModule } from './ai/ai.module';
-import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -25,7 +24,6 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     ProgressModule,
     StatsModule,
     AiModule,
-    SubscriptionsModule,
   ],
 })
 export class AppModule {}

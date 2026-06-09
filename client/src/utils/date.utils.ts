@@ -1,5 +1,14 @@
+function normalizeDateStr(dateStr: string): string {
+  // Extract YYYY-MM-DD from ISO strings like "2026-06-09T00:00:00.000Z"
+  if (dateStr.includes('T') || dateStr.includes('Z')) {
+    return dateStr.split('T')[0];
+  }
+  return dateStr;
+}
+
 export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00');
+  const normalized = normalizeDateStr(dateStr);
+  const date = new Date(normalized + 'T00:00:00');
   return date.toLocaleDateString('es-PY', {
     weekday: 'short',
     day: 'numeric',
@@ -8,7 +17,8 @@ export function formatDate(dateStr: string): string {
 }
 
 export function formatDateFull(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00');
+  const normalized = normalizeDateStr(dateStr);
+  const date = new Date(normalized + 'T00:00:00');
   return date.toLocaleDateString('es-PY', {
     weekday: 'long',
     day: 'numeric',
@@ -22,7 +32,7 @@ export function todayISO(): string {
 }
 
 export function isToday(dateStr: string): boolean {
-  return dateStr === todayISO();
+  return normalizeDateStr(dateStr) === todayISO();
 }
 
 export function daysAgo(n: number): string {

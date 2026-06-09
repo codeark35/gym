@@ -6,9 +6,9 @@
 
 ## 1. Visión del producto
 
-**GymTracker Pro** es una aplicación SaaS mobile-first para tracking de progreso de fuerza en el gimnasio. Permite registrar sesiones, ejercicios, series/reps/peso, visualizar progreso, estimar 1RM y recibir análisis con IA. El uso **primario es desde celular** (85%+ del tráfico esperado), por lo que toda UI debe diseñarse primero para pantallas de 375px–430px.
+**GymTracker Pro** es una aplicación gratuita mobile-first para tracking de progreso de fuerza en el gimnasio. Permite registrar sesiones, ejercicios, series/reps/peso, visualizar progreso, estimar 1RM y recibir análisis con IA. El uso **primario es desde celular** (85%+ del tráfico esperado), por lo que toda UI debe diseñarse primero para pantallas de 375px–430px.
 
-Labscore lo comercializa bajo modelo **SaaS con suscripción mensual** al estilo de Agendify: plan Gratuito (limitado), Plan Pro (individual) y Plan Gym (multi-usuario para gimnasios).
+Cualquier persona puede registrarse de forma gratuita usando su cuenta de Google y comenzar a medir su progreso sin límites ni suscripciones. No hay planes de pago ni restricciones por uso.
 
 ---
 
@@ -22,8 +22,11 @@ Labscore lo comercializa bajo modelo **SaaS con suscripción mensual** al estilo
 | Prisma | ^5 | ORM + migraciones |
 | PostgreSQL | 15+ | Base de datos principal |
 | Redis | ^7 | Cache, sesiones, rate limiting |
-| JWT (RS256) | — | Auth via microservicio centralizado Labscore |
-| Passport.js | — | Guards de autenticación |
+| Google OAuth 2.0 | — | Registro e inicio de sesión con Google |
+| JWT (HS256) | — | Tokens de sesión propios |
+| Passport.js | — | Estrategia Google OAuth + JWT |
+| @react-oauth/google | — | Google Sign-In en React |
+| @google/genai | — | Gemini 3 Flash Preview SDK |
 | EventEmitter2 | — | Eventos internos (state machines) |
 | class-validator | — | DTOs y validación |
 | class-transformer | — | Serialización |
@@ -45,7 +48,7 @@ Labscore lo comercializa bajo modelo **SaaS con suscripción mensual** al estilo
 ### Infraestructura
 - **Deploy backend**: Railway (NestJS + PostgreSQL + Redis como servicios)
 - **Deploy frontend**: Cloudflare Pages
-- **Auth**: Microservicio centralizado Labscore (RS256, refresh token rotation)
+- **Auth**: OAuth 2.0 (Google) + JWT propio (HS256)
 - **Dominio/CDN**: Cloudflare
 
 ### Reglas absolutas de stack
@@ -67,9 +70,12 @@ src/
 ├── prisma/
 │   ├── prisma.module.ts
 │   └── prisma.service.ts
-├── auth/                           # Guard que valida JWT del microservicio
+├── auth/                           # Auth propio con Google OAuth
 │   ├── auth.module.ts
-│   ├── jwt.strategy.ts             # RS256 verify con clave pública
+│   ├── auth.controller.ts
+│   ├── auth.service.ts
+│   ├── google.strategy.ts          # Passport Google OAuth
+│   ├── jwt.strategy.ts             # HS256 verify
 │   └── jwt-auth.guard.ts
 ├── users/
 │   ├── users.module.ts
@@ -105,14 +111,10 @@ src/
 │   ├── ai.module.ts
 │   ├── ai.controller.ts
 │   └── ai.service.ts
-├── subscriptions/                  # Planes y límites
-│   ├── subscriptions.module.ts
-│   └── subscriptions.service.ts
 └── common/
     ├── decorators/
     │   └── current-user.decorator.ts
     ├── guards/
-    │   └── subscription.guard.ts
     ├── interceptors/
     │   └── transform.interceptor.ts
     └── filters/
@@ -189,8 +191,7 @@ client/src/
 │   └── forms/
 │       └── NumberInput.tsx         # Input numérico optimizado mobile
 ├── hooks/
-│   ├── useAuth.ts
-│   └── useSubscription.ts
+│   └── useAuth.ts
 ├── types/
 │   ├── workout.types.ts
 │   ├── exercise.types.ts
@@ -223,12 +224,10 @@ datasource db {
 
 model User {
   id             String       @id @default(cuid())
-  externalId     String       @unique  // ID del microservicio Auth Labscore
+  googleId       String       @unique  // ID de Google OAuth
   email          String       @unique
   name           String
   avatarUrl      String?
-  subscriptionId String?
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
   profile        UserProfile?
   workouts       Workout[]
   exercises      Exercise[]   // ejercicios personalizados del usuario
@@ -264,7 +263,7 @@ model Exercise {
   secondaryMuscles MuscleGroup[]
   equipment    Equipment     @default(BARBELL)
   movementType MovementType
-  isGlobal     Boolean       @default(false) // true = catálogo global Labscore
+  isGlobal     Boolean       @default(false) // true = catálogo global
   userId       String?       // null si es global
   user         User?         @relation(fields: [userId], references: [id])
   sets         Set[]
@@ -332,20 +331,6 @@ model BodyMetric {
   @@map("body_metrics")
 }
 
-// ─── Suscripciones ───────────────────────────────────────────
-
-model Subscription {
-  id        String           @id @default(cuid())
-  plan      SubscriptionPlan
-  users     User[]
-  maxWorkoutsPerMonth Int?   // null = ilimitado
-  aiAnalysisEnabled  Boolean @default(false)
-  expiresAt DateTime?
-  createdAt DateTime         @default(now())
-
-  @@map("subscriptions")
-}
-
 // ─── Enums ───────────────────────────────────────────────────
 
 enum MuscleGroup {
@@ -405,12 +390,6 @@ enum ExperienceLevel {
 enum WeightUnit {
   KG
   LB
-}
-
-enum SubscriptionPlan {
-  FREE
-  PRO
-  GYM
 }
 ```
 
@@ -472,7 +451,15 @@ GET    /stats/volume-weekly         Volumen por semana (últimas 12 semanas)
 POST   /ai/analyze                  Análisis con IA (body: { type, context? })
 POST   /ai/chat                     Chat libre con IA
 ```
-> Endpoint `/ai/*` requiere plan Pro o Gym. Guard `SubscriptionGuard` protege el acceso.
+
+### Auth
+```
+GET    /auth/google                 Iniciar login con Google (redirección)
+GET    /auth/google/callback        Callback de Google OAuth
+POST   /auth/logout                 Cerrar sesión
+GET    /auth/me                     Datos del usuario autenticado
+```
+> Auth: `Authorization: Bearer <JWT>` en todos los endpoints protegidos.
 
 ---
 
@@ -578,12 +565,14 @@ async getStreak(userId: string): Promise<{ current: number; longest: number }> {
 }
 ```
 
-### 6.4 Integración IA (Claude API)
+### 6.4 Integración IA (Gemini 3 Flash Preview)
 
 ```typescript
 // ai.service.ts
 @Injectable()
 export class AiService {
+  private genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
   async analyze(userId: string, type: AnalysisType, userQuestion?: string): Promise<string> {
     const context = await this.buildUserContext(userId);
 
@@ -596,15 +585,16 @@ No inventes datos que no estén en el contexto.`;
       ? `${userQuestion}\n\nContexto del usuario:\n${context}`
       : this.buildPromptByType(type, context);
 
-    // Llamada a Anthropic SDK (usar @anthropic-ai/sdk)
-    const response = await this.anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const response = await this.genai.models.generateContent({
+      model: 'gemini-3.0-flash-preview',
+      contents: userPrompt,
+      config: {
+        systemInstruction: systemPrompt,
+        maxOutputTokens: 1024,
+      },
     });
 
-    return response.content[0].type === 'text' ? response.content[0].text : '';
+    return response.text ?? '';
   }
 
   private async buildUserContext(userId: string): Promise<string> {
@@ -773,19 +763,18 @@ export interface Stats {
 
 ---
 
-## 9. Plan de suscripción y límites
+## 9. Modelo de negocio
 
-| Feature | Free | Pro (₲ 35.000/mes) | Gym (₲ 80.000/mes) |
-|---|---|---|---|
-| Workouts/mes | 12 | Ilimitado | Ilimitado |
-| Análisis IA | ✗ | ✓ (20/mes) | ✓ Ilimitado |
-| Historial | 3 meses | Todo | Todo |
-| Ejercicios custom | 5 | Ilimitado | Ilimitado |
-| Exportar datos | ✗ | CSV/JSON | CSV/JSON |
-| Multi-usuario (gym) | ✗ | ✗ | Hasta 100 |
-| Dashboard gym owner | ✗ | ✗ | ✓ |
+**GymTracker Pro es 100% gratuito**. No hay planes de suscripción, ni límites de uso, ni funciones de pago.
 
-Precios en guaraníes paraguayos. Pagos vía **Bancard VPOS2** (módulo ya implementado en Labscore).
+Cualquier usuario registrado con Google tiene acceso completo a:
+- Registro ilimitado de workouts, ejercicios y series
+- Todo el historial de progreso sin restricción de tiempo
+- Análisis con IA (sin límite de consultas)
+- Exportación de datos
+- Creación ilimitada de ejercicios personalizados
+
+No se implementa sistema de pagos ni módulo de suscripciones.
 
 ---
 
@@ -813,32 +802,38 @@ El seed debe incluir al menos 60 ejercicios globales organizados por grupo muscu
 
 ### Backend (.env)
 ```env
-# Base de datos
-DATABASE_URL="postgresql://user:pass@host:5432/gymtracker"
+# ─── Base de datos ───────────────────────────
+DATABASE_URL="postgresql://gym_user:gym_password@127.0.0.1:5432/gym_db"
+
+# ─── Redis (opcional en desarrollo) ──────────
 REDIS_URL="redis://user:pass@host:6379"
 
-# Auth (microservicio Labscore)
-AUTH_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
-JWT_ALGORITHM="RS256"
+# ─── Auth (Google OAuth + JWT propio) ─────────
+GOOGLE_CLIENT_ID="tu-google-client-id"
+GOOGLE_CLIENT_SECRET="tu-google-client-secret"
+GOOGLE_CALLBACK_URL="http://localhost:3022/api/v1/auth/google/callback"
+JWT_SECRET="super-secret-key-cambiar-en-produccion"
+JWT_ALGORITHM="HS256"
+JWT_EXPIRES_IN="7d"
+JWT_DEV_SECRET="dev-secret-gymtracker-local-2024"
 
-# IA
-ANTHROPIC_API_KEY="sk-ant-..."
+# ─── Frontend (redirect post-login) ────────────
+FRONTEND_URL="http://localhost:5173"
 
-# App
-NODE_ENV="production"
-PORT=3000
-CORS_ORIGINS="https://gymtracker.labscore.com.py"
+# ─── IA (Gemini 3 Flash Preview) ─────────────
+GEMINI_API_KEY="tu-api-key-de-gemini"
 
-# Bancard (pagos)
-BANCARD_PUBLIC_KEY="..."
-BANCARD_PRIVATE_KEY="..."
-BANCARD_BASE_URL="https://vpos.infonet.com.py"
+# ─── App ─────────────────────────────────────
+NODE_ENV="development"
+PORT=3022
+CORS_ORIGINS="http://localhost:5173"
 ```
 
 ### Frontend (.env)
 ```env
-VITE_API_URL="https://api.gymtracker.labscore.com.py/api/v1"
+VITE_API_URL=http://localhost:3022/api/v1
 VITE_APP_NAME="GymTracker Pro"
+VITE_DEV_LOGIN=true
 ```
 
 ---
@@ -847,12 +842,12 @@ VITE_APP_NAME="GymTracker Pro"
 
 ### Fase 1 — Core MVP (2-3 semanas)
 1. Setup NestJS + Fastify + Prisma + PostgreSQL en Railway
-2. Integrar guard JWT del microservicio Auth Labscore
+2. Implementar auth propio con Google OAuth + JWT (HS256)
 3. Módulos: `users`, `exercises` (catálogo global + seed), `workouts`, `sets`
 4. Cálculo automático de `oneRepMax` y `volume` en `SetsService`
 5. Detección de PR al guardar set
 6. Endpoints básicos de `progress` y `stats`
-7. Frontend: AppShell + MobileNav + WorkoutLogger + ExercisePicker
+7. Frontend: AppShell + MobileNav + WorkoutLogger + ExercisePicker + Login con Google
 8. PWA: manifest + service worker básico
 
 ### Fase 2 — Progreso visual (1-2 semanas)
@@ -861,17 +856,16 @@ VITE_APP_NAME="GymTracker Pro"
 3. PRBadge: mostrar animación/badge al lograr PR
 4. Timer de descanso en WorkoutLogger
 
-### Fase 3 — IA y monetización (1-2 semanas)
-1. Módulo `ai` con integración Anthropic SDK
+### Fase 3 — IA y funciones avanzadas (1-2 semanas)
+1. Módulo `ai` con integración Gemini 3 Flash Preview
 2. AIAnalysisPanel en frontend
-3. Módulo `subscriptions` + SubscriptionGuard
-4. Integración Bancard VPOS2 para pagos
-5. Exportación CSV/JSON para plan Pro
+3. Exportación CSV/JSON
+4. Perfil de usuario y ajustes de la app
 
-### Fase 4 — Plan Gym (2 semanas)
-1. Multi-usuario bajo un dueño de gimnasio
-2. Dashboard gym owner: ver estadísticas de sus usuarios
-3. Gestión de membresías
+### Fase 4 — Mejoras y escala (2 semanas)
+1. Optimización mobile (gestos, transiciones, offline support)
+2. Notificaciones push (PWA)
+3. Cache avanzado con Redis
 
 ---
 

@@ -12,6 +12,7 @@ import ProgressPage from './features/progress/pages/ProgressPage';
 import StatsPage from './features/stats/pages/StatsPage';
 import ProfilePage from './features/auth/pages/ProfilePage';
 import AIPage from './features/ai/pages/AIPage';
+import WorkoutsHistoryPage from './features/workouts/pages/WorkoutsHistoryPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -37,6 +38,7 @@ function AppRoutes() {
       <Route path="/stats" element={<ProtectedRoute><StatsPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/ai" element={<ProtectedRoute><AIPage /></ProtectedRoute>} />
+      <Route path="/workouts" element={<ProtectedRoute><WorkoutsHistoryPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

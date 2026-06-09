@@ -13,7 +13,7 @@ export class ProgressController {
     @CurrentUser() user: any,
     @Param('exerciseId') exerciseId: string,
   ) {
-    return this.progressService.getExerciseProgress(user.externalId, exerciseId);
+    return this.progressService.getExerciseProgress(user.googleId, exerciseId);
   }
 
   @Get('exercise/:exerciseId/pr')
@@ -21,7 +21,7 @@ export class ProgressController {
     @CurrentUser() user: any,
     @Param('exerciseId') exerciseId: string,
   ) {
-    return this.progressService.getPersonalRecord(user.externalId, exerciseId);
+    return this.progressService.getPersonalRecord(user.googleId, exerciseId);
   }
 
   @Get('volume')
@@ -37,7 +37,7 @@ export class ProgressController {
         .toISOString()
         .split('T')[0];
     return this.progressService.getVolumeByMuscle(
-      user.externalId,
+      user.googleId,
       fromDate,
       toDate,
     );
@@ -48,6 +48,6 @@ export class ProgressController {
     @CurrentUser() user: any,
     @Param('exerciseId') exerciseId: string,
   ) {
-    return this.progressService.getOneRMHistory(user.externalId, exerciseId);
+    return this.progressService.getOneRMHistory(user.googleId, exerciseId);
   }
 }

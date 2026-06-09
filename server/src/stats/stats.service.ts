@@ -9,8 +9,8 @@ export class StatsService {
     private readonly usersService: UsersService,
   ) {}
 
-  async getSummary(externalId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getSummary(googleId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     const startOfWeek = new Date();
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
@@ -19,7 +19,7 @@ export class StatsService {
     const [totalWorkouts, { current: currentStreak, longest: longestStreak }, weekSets, uniqueExercisesResult] =
       await Promise.all([
         this.prisma.workout.count({ where: { userId: user.id, status: 'COMPLETED' } }),
-        this.getStreak(externalId),
+        this.getStreak(googleId),
         this.prisma.set.findMany({
           where: {
             workout: { userId: user.id, date: { gte: startOfWeek } },
@@ -57,8 +57,8 @@ export class StatsService {
     };
   }
 
-  async getStreak(externalId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getStreak(googleId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
 
     const workouts = await this.prisma.workout.findMany({
       where: { userId: user.id, status: 'COMPLETED' },
@@ -105,8 +105,8 @@ export class StatsService {
     return { current, longest };
   }
 
-  async getFrequency(externalId: string, weeks = 8) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getFrequency(googleId: string, weeks = 8) {
+    const user = await this.usersService.findByGoogleId(googleId);
     const since = new Date();
     since.setDate(since.getDate() - weeks * 7);
 
@@ -130,8 +130,8 @@ export class StatsService {
     }));
   }
 
-  async getVolumeWeekly(externalId: string) {
-    const user = await this.usersService.findByExternalId(externalId);
+  async getVolumeWeekly(googleId: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
     const since = new Date();
     since.setDate(since.getDate() - 12 * 7);
 

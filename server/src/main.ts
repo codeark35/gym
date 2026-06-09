@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -27,10 +29,20 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
+  // Health check endpoint (sin prefijo api/v1)
+  app.getHttpAdapter().get('/health', (_req, res) => {
+    res.status(200).send({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   const corsOrigins = process.env.CORS_ORIGINS?.split(',') ?? [
     'http://localhost:5173',
   ];
-  app.enableCors({ origin: corsOrigins, credentials: true });
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');

@@ -21,12 +21,17 @@ export class WorkoutsController {
 
   @Post()
   create(@CurrentUser() user: any, @Body() dto: CreateWorkoutDto) {
-    return this.workoutsService.create(user.externalId, dto);
+    return this.workoutsService.create(user.googleId, dto);
   }
 
   @Get('today')
   findToday(@CurrentUser() user: any) {
-    return this.workoutsService.findToday(user.externalId);
+    return this.workoutsService.findToday(user.googleId);
+  }
+
+  @Get('date/:date')
+  findAllForDate(@CurrentUser() user: any, @Param('date') date: string) {
+    return this.workoutsService.findAllForDate(user.googleId, date);
   }
 
   @Get()
@@ -36,7 +41,7 @@ export class WorkoutsController {
     @Query('limit') limit = '20',
   ) {
     return this.workoutsService.findAll(
-      user.externalId,
+      user.googleId,
       parseInt(page),
       parseInt(limit),
     );
@@ -44,7 +49,7 @@ export class WorkoutsController {
 
   @Get(':id')
   findOne(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.workoutsService.findOne(user.externalId, id);
+    return this.workoutsService.findOne(user.googleId, id);
   }
 
   @Patch(':id')
@@ -53,11 +58,11 @@ export class WorkoutsController {
     @Param('id') id: string,
     @Body() dto: UpdateWorkoutDto,
   ) {
-    return this.workoutsService.update(user.externalId, id, dto);
+    return this.workoutsService.update(user.googleId, id, dto);
   }
 
   @Delete(':id')
   remove(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.workoutsService.remove(user.externalId, id);
+    return this.workoutsService.remove(user.googleId, id);
   }
 }

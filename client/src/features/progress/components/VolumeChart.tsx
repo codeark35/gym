@@ -5,10 +5,9 @@ import { formatDate } from '../../../utils/date.utils';
 
 interface VolumeChartProps {
   data: { date?: string; week?: string; totalVolume: number }[];
-  xKey?: 'date' | 'week';
 }
 
-export default function VolumeChart({ data, xKey = 'date' }: VolumeChartProps) {
+export default function VolumeChart({ data }: VolumeChartProps) {
   const formatted = data.map((d) => ({
     ...d,
     label: formatDate((d.date ?? d.week)!),
@@ -21,7 +20,7 @@ export default function VolumeChart({ data, xKey = 'date' }: VolumeChartProps) {
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="label" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip formatter={(v: number) => [`${v} kg`, 'Volumen']} />
+        <Tooltip formatter={(v) => [`${v} kg`, 'Volumen']} />
         <Bar dataKey="totalVolume" fill="#212529" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>

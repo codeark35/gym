@@ -9,19 +9,17 @@ datasource db {
 // ─── Usuarios ────────────────────────────────────────────────
 
 model User {
-  id             String        @id @default(cuid())
-  externalId     String        @unique
-  email          String        @unique
+  id             String       @id @default(cuid())
+  googleId       String       @unique  // ID de Google OAuth
+  email          String       @unique
   name           String
   avatarUrl      String?
-  subscriptionId String?
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
   profile        UserProfile?
   workouts       Workout[]
-  exercises      Exercise[]
+  exercises      Exercise[]   // ejercicios personalizados del usuario
   bodyMetrics    BodyMetric[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@map("users")
 }
@@ -46,13 +44,13 @@ model UserProfile {
 model Exercise {
   id               String        @id @default(cuid())
   name             String
-  nameEs           String?
+  nameEs           String?       // nombre en español
   muscleGroup      MuscleGroup
   secondaryMuscles MuscleGroup[]
   equipment        Equipment     @default(BARBELL)
   movementType     MovementType
-  isGlobal         Boolean       @default(false)
-  userId           String?
+  isGlobal         Boolean       @default(false) // true = catálogo global
+  userId           String?       // null si es global
   user             User?         @relation(fields: [userId], references: [id])
   sets             Set[]
   createdAt        DateTime      @default(now())
@@ -68,10 +66,10 @@ model Workout {
   userId      String
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   date        DateTime      @db.Date
-  name        String?
+  name        String?       // "Día A - Push", "Piernas"
   notes       String?
-  durationMin Int?
-  bodyWeight  Float?
+  durationMin Int?          // duración en minutos
+  bodyWeight  Float?        // peso corporal ese día (opcional)
   status      WorkoutStatus @default(IN_PROGRESS)
   sets        Set[]
   createdAt   DateTime      @default(now())
@@ -80,25 +78,26 @@ model Workout {
   @@map("workouts")
 }
 
-// ─── Series ─────────────────────────────────────────────────
+// ─── Series (el corazón del tracking) ───────────────────────
 
 model Set {
-  id         String   @id @default(cuid())
-  workoutId  String
-  workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  exerciseId String
-  exercise   Exercise @relation(fields: [exerciseId], references: [id])
-  setNumber  Int
-  reps       Int
-  weightKg   Float    @default(0)
-  rpe        Float?
-  rir        Int?
-  isWarmup   Boolean  @default(false)
-  isPR       Boolean  @default(false)
-  notes      String?
-  oneRepMax  Float?
-  volume     Float?
-  createdAt  DateTime @default(now())
+  id          String    @id @default(cuid())
+  workoutId   String
+  workout     Workout   @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id])
+  setNumber   Int       // orden dentro del workout para ese ejercicio
+  reps        Int
+  weightKg    Float     @default(0)
+  rpe         Float?    // Rate of Perceived Exertion (1-10)
+  rir         Int?      // Reps in Reserve
+  isWarmup    Boolean   @default(false)
+  isPR        Boolean   @default(false)  // calculado y seteado automáticamente
+  notes       String?
+  // Calculados y almacenados para evitar recalcular en queries
+  oneRepMax   Float?    // 1RM estimado con Epley: weight * (1 + reps/30)
+  volume      Float?    // sets.reps * sets.weightKg
+  createdAt   DateTime  @default(now())
 
   @@map("sets")
 }
@@ -106,30 +105,16 @@ model Set {
 // ─── Métricas corporales ─────────────────────────────────────
 
 model BodyMetric {
-  id       String   @id @default(cuid())
-  userId   String
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date     DateTime @db.Date
-  weightKg Float?
-  bodyFat  Float?
-  notes    String?
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  weightKg  Float?
+  bodyFat   Float?
+  notes     String?
 
   @@unique([userId, date])
   @@map("body_metrics")
-}
-
-// ─── Suscripciones ───────────────────────────────────────────
-
-model Subscription {
-  id                  String           @id @default(cuid())
-  plan                SubscriptionPlan
-  users               User[]
-  maxWorkoutsPerMonth Int?
-  aiAnalysisEnabled   Boolean          @default(false)
-  expiresAt           DateTime?
-  createdAt           DateTime         @default(now())
-
-  @@map("subscriptions")
 }
 
 // ─── Enums ───────────────────────────────────────────────────
@@ -191,10 +176,4 @@ enum ExperienceLevel {
 enum WeightUnit {
   KG
   LB
-}
-
-enum SubscriptionPlan {
-  FREE
-  PRO
-  GYM
 }
