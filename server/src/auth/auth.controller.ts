@@ -65,18 +65,24 @@ export class AuthController {
    */
   @Post('firebase')
   async firebaseLogin(@Body('idToken') idToken: string) {
+    console.log('🔥 /auth/firebase called, idToken present:', !!idToken);
+    
     if (!idToken) {
       throw new UnauthorizedException('Firebase ID token required');
     }
 
     if (!isFirebaseAdminConfigured()) {
+      console.error('❌ Firebase Admin not configured');
       throw new UnauthorizedException('Firebase Admin no está configurado en el servidor. Usá el acceso de desarrollo o configurá las credenciales de Firebase.');
     }
 
     try {
       const auth = getAdminAuth();
+      console.log('🔥 Verifying Firebase token...');
+      
       // Verify Firebase ID token
       const decodedToken = await auth.verifyIdToken(idToken);
+      console.log('✅ Token verified for user:', decodedToken.uid);
       
       const googleId = decodedToken.uid;
       const email = decodedToken.email || 'user@firebase.local';
@@ -85,6 +91,7 @@ export class AuthController {
 
       // Find or create user
       const user = await this.usersService.findOrCreate(googleId, email, name, avatarUrl);
+      console.log('✅ User found/created:', user.id);
       
       // Generate JWT
       const payload = {
@@ -97,8 +104,9 @@ export class AuthController {
       
       return { access_token };
     } catch (error: any) {
-      console.error('Firebase token verification failed:', error.message);
-      throw new UnauthorizedException('Token de Firebase inválido');
+      console.error('❌ Firebase token verification failed:', error.message);
+      console.error('❌ Error details:', error);
+      throw new UnauthorizedException('Token de Firebase inválido: ' + error.message);
     }
   }
 
