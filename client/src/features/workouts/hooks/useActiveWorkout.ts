@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/axios';
 import type { Workout } from '../../../types/workout.types';
-import { todayISO, dateToLocalISO } from '../../../utils/date.utils';
+import { todayISO } from '../../../utils/date.utils';
 
 interface WorkoutSessionState {
   selectedDate: string;
@@ -46,12 +46,11 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
   const { isLoading: isLoadingQuery, data: queryWorkout } = useQuery<Workout | null>({
     queryKey: ['workout', 'active', selectedDate],
     queryFn: async () => {
-      const localDate = dateToLocalISO(selectedDate);
       if (selectedDate === todayISO()) {
-        const res = await api.get<{ data: Workout | null }>(`/workouts/today?date=${localDate}`);
+        const res = await api.get<{ data: Workout | null }>(`/workouts/today?date=${selectedDate}`);
         return res.data.data ?? null;
       } else {
-        const res = await api.get<{ data: Workout[] }>(`/workouts/date/${selectedDate}?localDate=${localDate}`);
+        const res = await api.get<{ data: Workout[] }>(`/workouts/date/${selectedDate}`);
         const workouts = res.data.data ?? [];
         return workouts.find((w: Workout) => w.status === 'IN_PROGRESS') ?? null;
       }
@@ -104,8 +103,7 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
   const startWorkout = useCallback(async () => {
     setError(null);
     try {
-      const localDate = dateToLocalISO(selectedDate);
-      const workout = await createMutation.mutateAsync({ date: localDate });
+      const workout = await createMutation.mutateAsync({ date: selectedDate });
       setActiveWorkout(workout);
       // Actualizar cache en background
       qc.setQueryData(['workout', 'active', selectedDate], workout);

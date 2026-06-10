@@ -1,15 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/axios';
 import type { Stats } from '../../../types/workout.types';
-import { todayISO, dateToLocalISO } from '../../../utils/date.utils';
+import { todayISO } from '../../../utils/date.utils';
 
 export function useStats() {
   const today = todayISO();
-  const localDate = dateToLocalISO(today);
   return useQuery({
     queryKey: ['stats', 'summary', today],
     queryFn: async () => {
-      const res = await api.get<{ data: Stats }>(`/stats/summary?date=${localDate}`);
+      const res = await api.get<{ data: Stats }>(`/stats/summary?date=${today}`);
       return (res.data.data ?? res.data) as Stats;
     },
   });
@@ -17,11 +16,10 @@ export function useStats() {
 
 export function useStreak() {
   const today = todayISO();
-  const localDate = dateToLocalISO(today);
   return useQuery({
     queryKey: ['stats', 'streak', today],
     queryFn: async () => {
-      const res = await api.get(`/stats/streak?date=${localDate}`);
+      const res = await api.get(`/stats/streak?date=${today}`);
       return res.data.data ?? res.data;
     },
   });
@@ -29,11 +27,10 @@ export function useStreak() {
 
 export function useVolumeWeekly() {
   const today = todayISO();
-  const localDate = dateToLocalISO(today);
   return useQuery({
     queryKey: ['stats', 'volume-weekly', today],
     queryFn: async () => {
-      const res = await api.get(`/stats/volume-weekly?date=${localDate}`);
+      const res = await api.get(`/stats/volume-weekly?date=${today}`);
       return (res.data.data ?? res.data) as { week: string; totalVolume: number }[];
     },
   });
@@ -41,11 +38,10 @@ export function useVolumeWeekly() {
 
 export function useFrequency(weeks = 8) {
   const today = todayISO();
-  const localDate = dateToLocalISO(today);
   return useQuery({
     queryKey: ['stats', 'frequency', weeks, today],
     queryFn: async () => {
-      const res = await api.get(`/stats/frequency?weeks=${weeks}&date=${localDate}`);
+      const res = await api.get(`/stats/frequency?weeks=${weeks}&date=${today}`);
       return (res.data.data ?? res.data) as { muscleGroup: string; totalSets: number }[];
     },
   });
@@ -53,11 +49,10 @@ export function useFrequency(weeks = 8) {
 
 export function useWeeklyActivity() {
   const today = todayISO();
-  const localDate = dateToLocalISO(today);
   return useQuery({
     queryKey: ['stats', 'weekly-activity', today],
     queryFn: async () => {
-      const res = await api.get(`/stats/weekly-activity?date=${localDate}`);
+      const res = await api.get(`/stats/weekly-activity?date=${today}`);
       return (res.data.data ?? res.data) as { day: string; status: string; intensity: number }[];
     },
   });
@@ -67,8 +62,7 @@ export function useRegisterRestDay() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (date: string) => {
-      const localDate = dateToLocalISO(date);
-      const res = await api.post('/stats/rest-day', { date: localDate });
+      const res = await api.post('/stats/rest-day', { date });
       return res.data;
     },
     onSuccess: () => {
