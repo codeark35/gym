@@ -6,18 +6,15 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { dateToLocalString } from '../utils/date.utils';
 
 /**
  * Recursively convert Date objects to YYYY-MM-DD strings
- * to avoid timezone issues on the frontend
+ * using always America/Asuncion (UTC-3) to avoid timezone drift.
  */
 function normalizeDates(obj: any): any {
   if (obj instanceof Date) {
-    // Convert Date to YYYY-MM-DD string (local date)
-    const year = obj.getFullYear();
-    const month = String(obj.getMonth() + 1).padStart(2, '0');
-    const day = String(obj.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return dateToLocalString(obj);
   }
   if (Array.isArray(obj)) {
     return obj.map(normalizeDates);

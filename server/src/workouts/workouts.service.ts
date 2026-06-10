@@ -5,6 +5,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { CreateWorkoutDto, UpdateWorkoutDto } from './dto/workout.dto';
+import { parseLocalDate, getTodayInTimezone } from '../common/utils/date.utils';
 
 @Injectable()
 export class WorkoutsService {
@@ -16,14 +17,7 @@ export class WorkoutsService {
   async create(googleId: string, dto: CreateWorkoutDto) {
     const user = await this.usersService.findByGoogleId(googleId);
 
-    let date: Date;
-    if (dto.date) {
-      // Parse YYYY-MM-DD as UTC midnight to avoid timezone drift
-      date = new Date(`${dto.date}T00:00:00Z`);
-    } else {
-      date = new Date();
-      date.setHours(0, 0, 0, 0);
-    }
+    const date = dto.date ? parseLocalDate(dto.date) : getTodayInTimezone();
 
     return this.prisma.workout.create({
       data: {
@@ -73,17 +67,10 @@ export class WorkoutsService {
   async findToday(googleId: string, dateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
 
-    let today: Date;
-    if (dateStr) {
-      today = new Date(`${dateStr}T00:00:00Z`);
-    } else {
-      today = new Date();
-      today.setHours(0, 0, 0, 0);
-    }
+    const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Find the most recent IN_PROGRESS workout for today
     return this.prisma.workout.findFirst({
       where: {
         userId: user.id,
@@ -97,7 +84,7 @@ export class WorkoutsService {
 
   async findAllForDate(googleId: string, dateStr: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    const date = new Date(`${dateStr}T00:00:00Z`);
+    const date = parseLocalDate(dateStr);
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
 

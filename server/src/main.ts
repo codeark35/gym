@@ -1,5 +1,9 @@
 import 'dotenv/config';
 
+// Forzar timezone a Paraguay/Asunción (UTC-3) para que todas las fechas
+// del backend sean consistentes sin importar dónde corra el servidor.
+process.env.TZ = 'America/Asuncion';
+
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
