@@ -1,6 +1,6 @@
-import { Dumbbell } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import logo from '../../assets/logo.png';
 
 export default function TopBar() {
   const { user } = useAuth();
@@ -10,17 +10,11 @@ export default function TopBar() {
     <nav className="top-bar sticky-top">
       <div className="container-fluid d-flex align-items-center justify-content-between">
         <span className="d-flex align-items-center gap-2 fw-bold text-white" style={{ fontSize: '1.125rem' }}>
-          <div
-            className="d-flex align-items-center justify-content-center"
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: '#1e3a5f',
-            }}
-          >
-            <Dumbbell size={18} className="text-white" />
-          </div>
+          <img
+            src={logo}
+            alt="GymTracker Pro"
+            style={{ width: 32, height: 32, borderRadius: 8 }}
+          />
           <span className="d-none d-sm-inline">GymTracker Pro</span>
         </span>
         {user && (

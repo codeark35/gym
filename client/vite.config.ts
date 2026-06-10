@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'icons/*.png'],
+      includeAssets: ['favicon.svg', 'icons/*.png', 'src/assets/logo.png'],
       devOptions: { enabled: false },
       manifest: {
         name: 'GymTracker Pro',
