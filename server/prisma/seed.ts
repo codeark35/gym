@@ -233,19 +233,47 @@ const exercises = [
 async function main() {
   console.log('Seeding exercises...');
 
-  // Clean up duplicate exercises by name (keep only the first one)
-  interface DuplicateExercise {
-    name: string;
-    keep_id: string;
+  // Step 1: Clean up duplicate exercises by name (keep only the first one)
+  console.log('Checking for duplicate exercises...');
+  const allExercises = await prisma.exercise.findMany({
+    where: { isGlobal: true },
+    select: { id: true, name: true },
+    orderBy: { id: 'asc' },
+  });
+
+  const nameMap = new Map<string, string>();
+  let totalRemoved = 0;
+
+  for (const ex of allExercises) {
+    if (nameMap.has(ex.name)) {
+      const keepId = nameMap.get(ex.name)!;
+      
+      // Reassign any sets from duplicate to original
+      const updatedSets = await prisma.set.updateMany({
+        where: { exerciseId: ex.id },
+        data: { exerciseId: keepId },
+      });
+      if (updatedSets.count > 0) {
+        console.log(`  Reassigned ${updatedSets.count} sets from "${ex.name}" duplicate to original`);
+      }
+      
+      // Delete the duplicate
+      await prisma.exercise.delete({ where: { id: ex.id } });
+      totalRemoved++;
+      console.log(`  Removed duplicate: "${ex.name}" (id: ${ex.id})`);
+    } else {
+      nameMap.set(ex.name, ex.id);
+    }
   }
 
-  // Check for existing exercises to avoid duplicates
-  const existingExercises = await prisma.exercise.findMany({
-    where: { isGlobal: true },
-    select: { name: true },
-  });
-  const existingNames = new Set(existingExercises.map(e => e.name));
+  if (totalRemoved > 0) {
+    console.log(`✅ Removed ${totalRemoved} duplicate exercises`);
+  } else {
+    console.log('✅ No duplicate exercises found');
+  }
 
+  // Step 2: Seed new exercises
+  const existingNames = new Set(allExercises.map(e => e.name));
   const newExercises = exercises.filter(e => !existingNames.has(e.name));
 
   if (newExercises.length > 0) {
@@ -258,9 +286,9 @@ async function main() {
       })),
       skipDuplicates: true,
     });
-    console.log(`Seeded ${newExercises.length} new exercises (${existingNames.size} already existed)`);
+    console.log(`✅ Seeded ${newExercises.length} new exercises (${existingNames.size} already existed)`);
   } else {
-    console.log(`All ${exercises.length} exercises already exist, no new exercises seeded`);
+    console.log(`✅ All ${exercises.length} exercises already exist, no new exercises seeded`);
   }
 }
 

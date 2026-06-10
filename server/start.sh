@@ -5,22 +5,23 @@ set -e  # Exit on any error
 
 echo "=== GymTracker Pro Startup Script ==="
 
-# Limpiar migración fallida directamente en la base de datos
-echo "[1/5] Checking for failed migration..."
-node prisma/fix-migration.js
+# Crear archivo temporal de migración para poder marcarla como resuelta
+echo "[1/4] Creating temporary migration file..."
+mkdir -p prisma/migrations/20250609000002_clean_duplicates
+echo "-- Empty migration" > prisma/migrations/20250609000002_clean_duplicates/migration.sql
+
+# Marcar migración fallida como resuelta
+echo "[2/4] Resolving failed migration..."
+npx prisma migrate resolve --applied "20250609000002_clean_duplicates" || echo "Migration already resolved"
 
 # Ejecutar migraciones pendientes
-echo "[2/5] Running migrations..."
+echo "[3/4] Running migrations..."
 npx prisma migrate deploy
 
-# Limpiar duplicados de ejercicios
-echo "[3/5] Cleaning up duplicate exercises..."
-node prisma/clean-duplicates.js
-
-# Ejecutar seed
-echo "[4/5] Seeding exercises..."
+# Ejecutar seed (limpia duplicados y carga ejercicios)
+echo "[4/4] Seeding exercises..."
 npm run prisma:seed
 
 # Iniciar aplicación
-echo "[5/5] Starting application..."
+echo "=== Starting application..."
 node dist/src/main
