@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import { parseLocalDate, getTodayInTimezone, dateToLocalString } from '../common/utils/date.utils';
 
 @Injectable()
 export class StatsService {
@@ -9,17 +10,20 @@ export class StatsService {
     private readonly usersService: UsersService,
   ) {}
 
-  async getSummary(googleId: string) {
+  async getSummary(googleId: string, dateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-
-    const startOfWeek = new Date();
+    
+    // Use local date from frontend or fallback to UTC-3
+    const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
+    
+    const startOfWeek = new Date(today);
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
     const [totalWorkouts, { current: currentStreak, longest: longestStreak }, weekSets, uniqueExercisesResult] =
       await Promise.all([
         this.prisma.workout.count({ where: { userId: user.id, status: 'COMPLETED' } }),
-        this.getStreak(googleId),
+        this.getStreak(googleId, dateStr),
         this.prisma.set.findMany({
           where: {
             workout: { userId: user.id, date: { gte: startOfWeek } },
@@ -57,7 +61,7 @@ export class StatsService {
     };
   }
 
-  async getStreak(googleId: string) {
+  async getStreak(googleId: string, dateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
 
     const workouts = await this.prisma.workout.findMany({
@@ -67,10 +71,11 @@ export class StatsService {
     });
 
     const uniqueDates = [
-      ...new Set(workouts.map((w) => w.date.toISOString().split('T')[0])),
+      ...new Set(workouts.map((w) => dateToLocalString(w.date))),
     ].sort().reverse();
 
-    const today = new Date().toISOString().split('T')[0];
+    // Use local date from frontend or fallback to UTC-3
+    const today = dateStr ? dateToLocalString(parseLocalDate(dateStr)) : dateToLocalString(getTodayInTimezone());
 
     // Current streak
     let current = 0;
@@ -78,9 +83,9 @@ export class StatsService {
     for (const date of uniqueDates) {
       if (date === cursor) {
         current++;
-        const d = new Date(cursor);
+        const d = new Date(cursor + 'T00:00:00');
         d.setDate(d.getDate() - 1);
-        cursor = d.toISOString().split('T')[0];
+        cursor = dateToLocalString(d);
       } else if (date < cursor) {
         break;
       }
@@ -91,9 +96,9 @@ export class StatsService {
     let temp = 1;
     const sorted = [...uniqueDates].sort();
     for (let i = 1; i < sorted.length; i++) {
-      const prev = new Date(sorted[i - 1]);
+      const prev = new Date(sorted[i - 1] + 'T00:00:00');
       prev.setDate(prev.getDate() + 1);
-      if (prev.toISOString().split('T')[0] === sorted[i]) {
+      if (dateToLocalString(prev) === sorted[i]) {
         temp++;
       } else {
         longest = Math.max(longest, temp);
@@ -105,9 +110,12 @@ export class StatsService {
     return { current, longest };
   }
 
-  async getFrequency(googleId: string, weeks = 8) {
+  async getFrequency(googleId: string, weeks = 8, dateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    const since = new Date();
+    
+    // Use local date from frontend or fallback to UTC-3
+    const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
+    const since = new Date(today);
     since.setDate(since.getDate() - weeks * 7);
 
     const sets = await this.prisma.set.findMany({
@@ -130,9 +138,12 @@ export class StatsService {
     }));
   }
 
-  async getVolumeWeekly(googleId: string) {
+  async getVolumeWeekly(googleId: string, dateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    const since = new Date();
+    
+    // Use local date from frontend or fallback to UTC-3
+    const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
+    const since = new Date(today);
     since.setDate(since.getDate() - 12 * 7);
 
     const sets = await this.prisma.set.findMany({
@@ -148,7 +159,7 @@ export class StatsService {
       const d = new Date(set.workout.date);
       const weekStart = new Date(d);
       weekStart.setDate(d.getDate() - d.getDay());
-      const key = weekStart.toISOString().split('T')[0];
+      const key = dateToLocalString(weekStart);
       byWeek[key] = (byWeek[key] ?? 0) + (set.volume ?? 0);
     }
 
@@ -157,9 +168,11 @@ export class StatsService {
       .map(([week, totalVolume]) => ({ week, totalVolume: Math.round(totalVolume) }));
   }
 
-  async getWeeklyActivity(googleId: string) {
+  async getWeeklyActivity(googleId: string, dateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    const today = new Date();
+    
+    // Use local date from frontend or fallback to UTC-3
+    const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
     today.setHours(0, 0, 0, 0);
     
     // Get start of week (Monday)
@@ -196,10 +209,10 @@ export class StatsService {
     for (let i = 0; i < 7; i++) {
       const currentDate = new Date(startOfWeek);
       currentDate.setDate(currentDate.getDate() + i);
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = dateToLocalString(currentDate);
       
-      const workout = workouts.find(w => w.date.toISOString().split('T')[0] === dateStr);
-      const restDay = restDays.find(r => r.date.toISOString().split('T')[0] === dateStr);
+      const workout = workouts.find(w => dateToLocalString(w.date) === dateStr);
+      const restDay = restDays.find(r => dateToLocalString(r.date) === dateStr);
       
       if (workout && workout.status === 'COMPLETED') {
         activity.push({ day: days[i], status: 'completed', intensity: 100 });
@@ -217,7 +230,7 @@ export class StatsService {
 
   async registerRestDay(googleId: string, date?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    const restDate = date ? new Date(date) : new Date();
+    const restDate = date ? parseLocalDate(date) : getTodayInTimezone();
     restDate.setHours(0, 0, 0, 0);
 
     return this.prisma.restDay.upsert({

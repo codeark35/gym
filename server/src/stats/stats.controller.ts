@@ -9,28 +9,28 @@ export class StatsController {
   constructor(private readonly statsService: StatsService) {}
 
   @Get('summary')
-  getSummary(@CurrentUser() user: any) {
-    return this.statsService.getSummary(user.googleId);
+  getSummary(@CurrentUser() user: any, @Query('date') date?: string) {
+    return this.statsService.getSummary(user.googleId, date);
   }
 
   @Get('streak')
-  getStreak(@CurrentUser() user: any) {
-    return this.statsService.getStreak(user.googleId);
+  getStreak(@CurrentUser() user: any, @Query('date') date?: string) {
+    return this.statsService.getStreak(user.googleId, date);
   }
 
   @Get('frequency')
-  getFrequency(@CurrentUser() user: any, @Query('weeks') weeks = '8') {
-    return this.statsService.getFrequency(user.googleId, parseInt(weeks));
+  getFrequency(@CurrentUser() user: any, @Query('weeks') weeks = '8', @Query('date') date?: string) {
+    return this.statsService.getFrequency(user.googleId, parseInt(weeks), date);
   }
 
   @Get('volume-weekly')
-  getVolumeWeekly(@CurrentUser() user: any) {
-    return this.statsService.getVolumeWeekly(user.googleId);
+  getVolumeWeekly(@CurrentUser() user: any, @Query('date') date?: string) {
+    return this.statsService.getVolumeWeekly(user.googleId, date);
   }
 
   @Get('weekly-activity')
-  getWeeklyActivity(@CurrentUser() user: any) {
-    return this.statsService.getWeeklyActivity(user.googleId);
+  getWeeklyActivity(@CurrentUser() user: any, @Query('date') date?: string) {
+    return this.statsService.getWeeklyActivity(user.googleId, date);
   }
 
   @Post('rest-day')

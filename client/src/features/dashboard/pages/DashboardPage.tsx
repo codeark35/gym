@@ -2,7 +2,7 @@ import AppShell from '../../../components/layout/AppShell';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { useStats, useWeeklyActivity, useRegisterRestDay } from '../../stats/hooks/useStats';
 import { useTodayWorkout, useWorkoutsForDate } from '../../workouts/hooks/useWorkouts';
-import { todayISO } from '../../../utils/date.utils';
+import { todayISO, dateToLocalISO } from '../../../utils/date.utils';
 import {
   Dumbbell, TrendingUp, ArrowRight, Flame, CheckCircle2,
   CircleDot, Play, Zap, User, Target, CalendarDays, Moon
@@ -29,8 +29,9 @@ export default function DashboardPage() {
   const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
   const handleRestDay = () => {
-    const today = new Date().toISOString().split('T')[0];
-    registerRestDay.mutate(today);
+    const today = todayISO();
+    const localDate = dateToLocalISO(today);
+    registerRestDay.mutate(localDate);
   };
 
   return (
