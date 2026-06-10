@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { AnalysisType } from './dto/ai.dto';
+import { dateToLocalString } from '../common/utils/date.utils';
 
 @Injectable()
 export class AiService {
@@ -18,17 +19,22 @@ export class AiService {
   async analyze(googleId: string, type: AnalysisType, userQuestion?: string): Promise<string> {
     const context = await this.buildUserContext(googleId);
 
-    const systemPrompt = `Sos un entrenador personal experto en entrenamiento de fuerza.
-Analizás datos reales de entrenamiento y das feedback conciso, accionable y motivador.
+    const systemPrompt = `Actúas como un entrenador personal certificado y experto en biomecánica.
+Tu objetivo es analizar datos reales de entrenamiento y armar rutinas basadas en la ciencia (volumen recuperable, frecuencia, intensidad).
+Si el usuario pide algo que arriesgue su salud, advertilo claramente.
 Respondé siempre en español rioplatense informal (che, boludo, vamos, etc.).
-Máximo 250 palabras. No inventes datos que no estén en el contexto.`;
+Máximo 250 palabras. No inventes datos que no estén en el contexto.
+
+Cuando el usuario pida una rutina o plan de entrenamiento, devolvé la respuesta estrictamente en formato JSON con estas llaves:
+{ "rutina": [ { "dia": "string", "ejercicio": "string", "series": number, "repeticiones": number, "consejo_tecnico": "string" } ] }
+Si no pide rutina, respondé en texto normal.`;
 
     const userPrompt = userQuestion
       ? `${userQuestion}\n\nContexto del usuario:\n${context}`
       : this.buildPromptByType(type, context);
 
     const response = await this.genai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
         systemInstruction: systemPrompt,
@@ -83,7 +89,7 @@ Máximo 250 palabras. No inventes datos que no estén en el contexto.`;
     ];
 
     for (const workout of workouts) {
-      const date = workout.date.toISOString().split('T')[0];
+      const date = dateToLocalString(workout.date);
       lines.push(`\n${date} - ${workout.name ?? 'Entrenamiento'}`);
 
       const byExercise = new Map<string, typeof workout.sets>();
