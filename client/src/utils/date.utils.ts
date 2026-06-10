@@ -15,7 +15,8 @@ function normalizeDateStr(dateStr: string): string {
 export function formatDate(dateStr: string): string {
   const normalized = normalizeDateStr(dateStr);
   const [year, month, day] = normalized.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
+  // UTC noon evita que timezone shift del navegador cambie el día
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   return new Intl.DateTimeFormat('es-PY', {
     timeZone: TIMEZONE,
     weekday: 'short',
@@ -27,7 +28,7 @@ export function formatDate(dateStr: string): string {
 export function formatDateFull(dateStr: string): string {
   const normalized = normalizeDateStr(dateStr);
   const [year, month, day] = normalized.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   return new Intl.DateTimeFormat('es-PY', {
     timeZone: TIMEZONE,
     weekday: 'long',

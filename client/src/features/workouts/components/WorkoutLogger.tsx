@@ -7,7 +7,7 @@ import WorkoutSummary from './WorkoutSummary';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { formatDateFull, todayISO } from '../../../utils/date.utils';
 import { totalVolume, formatVolume } from '../../../utils/volume.utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus, CheckCircle2, Dumbbell, CalendarDays, Zap, AlertTriangle
 } from 'lucide-react';
@@ -31,6 +31,39 @@ export default function WorkoutLogger() {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [activeExerciseId, setActiveExerciseId] = useState<string | null>(null);
+  const [exerciseOrder, setExerciseOrder] = useState<string[]>([]);
+
+  // Reset local state when workout changes (new session)
+  useEffect(() => {
+    if (workout?.id) {
+      setExerciseOrder([]);
+      setActiveExerciseId(null);
+      setSelectedExercises([]);
+    }
+  }, [workout?.id]);
+
+  // Keep fixed insertion order: only append new IDs, never reorder
+  useEffect(() => {
+    if (!workout) return;
+    setExerciseOrder((prev) => {
+      const next = [...prev];
+      const seen = new Set(next);
+      for (const s of workout.sets ?? []) {
+        if (!seen.has(s.exerciseId)) {
+          seen.add(s.exerciseId);
+          next.push(s.exerciseId);
+        }
+      }
+      for (const ex of selectedExercises) {
+        if (!seen.has(ex.id)) {
+          seen.add(ex.id);
+          next.push(ex.id);
+        }
+      }
+      return next;
+    });
+  }, [workout, selectedExercises]);
 
   if (isLoading) {
     return (
@@ -206,16 +239,22 @@ export default function WorkoutLogger() {
         </div>
       )}
 
-      {/* Exercise cards */}
-      {Array.from(exerciseMap.values()).map(({ exercise, sets }) => (
-        <ExerciseCard
-          key={exercise.id}
-          exerciseId={exercise.id}
-          exercise={exercise}
-          sets={sets}
-          workoutId={workout.id}
-        />
-      ))}
+      {/* Exercise cards — fixed order accordion */}
+      {exerciseOrder.map((exId) => {
+        const entry = exerciseMap.get(exId);
+        if (!entry) return null;
+        return (
+          <ExerciseCard
+            key={exId}
+            exerciseId={exId}
+            exercise={entry.exercise}
+            sets={entry.sets}
+            workoutId={workout.id}
+            isExpanded={activeExerciseId === exId}
+            onToggle={() => setActiveExerciseId((prev) => prev === exId ? null : exId)}
+          />
+        );
+      })}
 
       {/* Action buttons */}
       <div className="d-flex gap-2 mt-3">
@@ -270,6 +309,8 @@ export default function WorkoutLogger() {
         onSelect={(exercise: Exercise) => {
           if (!selectedExercises.some((e) => e.id === exercise.id)) {
             setSelectedExercises((prev) => [...prev, exercise]);
+            setExerciseOrder((prev) => [...prev, exercise.id]);
+            setActiveExerciseId(exercise.id);
           }
           setShowPicker(false);
         }}

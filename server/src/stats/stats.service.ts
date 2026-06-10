@@ -16,7 +16,6 @@ export class StatsService {
     const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
     const { year, month, day, dayOfWeek } = dateParts(today);
     const startOfWeek = dateFromParts(year, month, day - dayOfWeek);
-    startOfWeek.setHours(0, 0, 0, 0);
 
     const [totalWorkouts, { current: currentStreak, longest: longestStreak }, weekSets, uniqueExercisesResult] =
       await Promise.all([
@@ -166,14 +165,12 @@ export class StatsService {
     const user = await this.usersService.findByGoogleId(googleId);
     
     const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
-    today.setHours(0, 0, 0, 0);
     
     // Get start of week (Monday) using UTC-3 parts
     const { year, month, day, dayOfWeek } = dateParts(today);
     // dayOfWeek: 0=Sun, 1=Mon... Monday offset = dayOfWeek - 1, but if Sunday we want -6
     const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const startOfWeek = dateFromParts(year, month, day + diff);
-    startOfWeek.setHours(0, 0, 0, 0);
 
     const endOfWeek = addDays(startOfWeek, 6);
 
@@ -222,7 +219,6 @@ export class StatsService {
   async registerRestDay(googleId: string, date?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
     const restDate = date ? parseLocalDate(date) : getTodayInTimezone();
-    restDate.setHours(0, 0, 0, 0);
 
     return this.prisma.restDay.upsert({
       where: {

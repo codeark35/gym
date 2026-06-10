@@ -4,13 +4,15 @@ import { MUSCLE_GROUP_LABELS } from '../../../types/workout.types';
 
 import { useAddSet } from '../hooks/useWorkouts';
 import SetRow from './SetRow';
-import { Plus, Timer, Minus, ChevronDown, ChevronUp, Maximize2, Minimize2 } from 'lucide-react';
+import { Plus, Timer, Minus, ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 
 interface ExerciseCardProps {
   exerciseId: string;
   exercise: Exercise;
   sets: WorkoutSet[];
   workoutId: string;
+  isExpanded: boolean;
+  onToggle: () => void;
 }
 
 // Muscle group color mapping
@@ -69,15 +71,13 @@ function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void })
   );
 }
 
-export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: ExerciseCardProps) {
+export default function ExerciseCard({ exerciseId, exercise, sets, workoutId, isExpanded, onToggle }: ExerciseCardProps) {
   const addSet = useAddSet();
   const [weight, setWeight] = useState(sets.length ? sets[sets.length - 1].weightKg : 0);
   const [reps, setReps] = useState(sets.length ? sets[sets.length - 1].reps : 10);
   const [restTime, setRestTime] = useState(90);
   const [showTimer, setShowTimer] = useState(false);
   const [showRestSelector, setShowRestSelector] = useState(false);
-  // Collapse by default if exercise has sets (completed), keep expanded if empty (active)
-  const [isCollapsed, setIsCollapsed] = useState(sets.length > 0);
 
   const color = getMuscleColor(exercise.muscleGroup as MuscleGroup);
   const totalVol = sets.reduce((sum, s) => sum + (s.volume ?? 0), 0);
@@ -98,20 +98,16 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
     setReps((r) => Math.max(1, r + delta));
   };
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-
   return (
     <div className="card mb-3" style={{ border: 'none', borderRadius: 16, overflow: 'hidden' }}>
       {/* Header - clickable to collapse/expand */}
       <div
         className="card-header d-flex align-items-center justify-content-between py-2 px-3"
-        onClick={toggleCollapse}
+        onClick={onToggle}
         style={{
           background: color.bg,
-          borderBottom: isCollapsed ? 'none' : `1px solid ${color.border}`,
-          borderRadius: isCollapsed ? 16 : '16px 16px 0 0',
+          borderBottom: !isExpanded ? 'none' : `1px solid ${color.border}`,
+          borderRadius: !isExpanded ? 16 : '16px 16px 0 0',
           cursor: 'pointer',
         }}
       >
@@ -153,7 +149,7 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
           {/* Collapse/expand button */}
           <button
             className="btn btn-sm d-flex align-items-center justify-content-center"
-            onClick={(e) => { e.stopPropagation(); toggleCollapse(); }}
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
             style={{
               borderRadius: 8,
               background: 'rgba(255,255,255,0.5)',
@@ -164,11 +160,11 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
               padding: 0,
             }}
           >
-            {isCollapsed ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+            {!isExpanded ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
           </button>
 
           {/* Rest time selector */}
-          {!isCollapsed && (
+          {isExpanded && (
             <div className="position-relative">
               <button
                 className="btn btn-sm d-flex align-items-center gap-1"
@@ -214,7 +210,7 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
       </div>
 
       {/* Collapsed summary */}
-      {isCollapsed && sets.length > 0 && (
+      {!isExpanded && sets.length > 0 && (
         <div className="card-body py-2 px-3">
           <div className="d-flex align-items-center gap-3">
             <div className="d-flex align-items-center gap-1">
@@ -251,7 +247,7 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId }: 
       )}
 
       {/* Expanded content */}
-      {!isCollapsed && (
+      {isExpanded && (
         <div className="card-body p-2">
         {/* Sets list */}
         {sets.map((s, i) => (

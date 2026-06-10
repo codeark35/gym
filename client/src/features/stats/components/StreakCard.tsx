@@ -1,4 +1,5 @@
 import { Flame, Trophy, CalendarDays } from 'lucide-react';
+import { todayISO } from '../../../utils/date.utils';
 
 interface StreakCardProps {
   current: number;
@@ -9,12 +10,13 @@ export default function StreakCard({ current, longest }: StreakCardProps) {
   const isRecord = current >= longest && current > 0;
   const hasStreak = current > 0;
 
-  // Generate last 7 days dots (mock for visual, in real app would come from API)
+  // Generate last 7 days dots using app timezone (America/Asuncion)
   const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-  const todayIndex = new Date().getDay(); // 0 = Sunday
+  // Use UTC noon so getDay() matches the app timezone day
+  const todayIndex = new Date(todayISO() + 'T12:00:00Z').getDay();
   const activeIndices = new Set<number>();
   
-  // Fill active days for streak (mock logic: last N days including today)
+  // Fill active days for streak (last N days including today)
   for (let i = 0; i < Math.min(current, 7); i++) {
     const idx = (todayIndex - i + 7) % 7;
     activeIndices.add(idx);

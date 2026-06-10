@@ -31,9 +31,12 @@ export function localDateString(d = new Date()): string {
 
 /**
  * Extrae partes de fecha (año, mes, día, día de semana) usando siempre UTC-3.
+ * Forzamos UTC noon para evitar drift de día al formatear.
  */
 export function dateParts(d: Date): { year: number; month: number; day: number; dayOfWeek: number } {
-  const parts = fmtParts.formatToParts(d);
+  const d2 = new Date(d);
+  d2.setUTCHours(12, 0, 0, 0);
+  const parts = fmtParts.formatToParts(d2);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '0';
   const year = parseInt(get('year'), 10);
   const month = parseInt(get('month'), 10);
@@ -60,29 +63,31 @@ export function dateParts(d: Date): { year: number; month: number; day: number; 
 }
 
 /**
- * Crea un Date a partir de año, mes, día en UTC-3.
+ * Crea un Date a partir de año, mes, día en UTC midnight.
  * El mes es 1-indexed.
+ * Usa UTC para evitar que el timezone del sistema OS desplace el día.
  */
 export function dateFromParts(year: number, month: number, day: number): Date {
-  return new Date(year, month - 1, day);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
 }
 
 /**
  * Agrega días a un Date y devuelve un nuevo Date.
+ * Opera en UTC para evitar drift de timezone.
  */
 export function addDays(date: Date, days: number): Date {
   const d = new Date(date);
-  d.setDate(d.getDate() + days);
+  d.setUTCDate(d.getUTCDate() + days);
   return d;
 }
 
 /**
  * Parsea una fecha YYYY-MM-DD enviada desde el frontend.
- * Como el backend está en UTC-3, la fecha local se crea a medianoche
- * en ese timezone y Prisma la guarda como UTC en la base de datos.
+ * Usa UTC noon para evitar que timezone shift cambie el día
+ * cuando el servidor corre en UTC y se formatea a Asunción.
  */
 export function parseLocalDate(dateStr: string): Date {
-  return new Date(dateStr + 'T00:00:00');
+  return new Date(dateStr + 'T12:00:00.000Z');
 }
 
 /**
@@ -97,7 +102,10 @@ export function getTodayInTimezone(): Date {
 /**
  * Convierte un Date de la base de datos a string YYYY-MM-DD
  * usando siempre UTC-3 como referencia.
+ * Forzamos UTC noon para evitar drift de día.
  */
 export function dateToLocalString(date: Date): string {
-  return fmt.format(date);
+  const d = new Date(date);
+  d.setUTCHours(12, 0, 0, 0);
+  return fmt.format(d);
 }
