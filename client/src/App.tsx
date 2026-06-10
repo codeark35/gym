@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './api/queryClient';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/ui/LoadingSpinner';
+import ReloadPrompt from './components/ReloadPrompt';
 
 // Pages
 import LoginPage from './features/auth/pages/LoginPage';
@@ -50,6 +51,7 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
+          <ReloadPrompt />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
