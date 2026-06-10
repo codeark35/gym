@@ -63,10 +63,17 @@ export class WorkoutsService {
     return workout;
   }
 
-  async findToday(googleId: string) {
+  async findToday(googleId: string, dateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    
+    // Use date from frontend if provided (local date), otherwise fallback to server UTC
+    let today: Date;
+    if (dateStr) {
+      today = new Date(dateStr + 'T00:00:00');
+    } else {
+      today = new Date();
+      today.setHours(0, 0, 0, 0);
+    }
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 

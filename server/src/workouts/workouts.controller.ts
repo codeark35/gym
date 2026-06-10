@@ -25,8 +25,8 @@ export class WorkoutsController {
   }
 
   @Get('today')
-  findToday(@CurrentUser() user: any) {
-    return this.workoutsService.findToday(user.googleId);
+  findToday(@CurrentUser() user: any, @Query('date') date?: string) {
+    return this.workoutsService.findToday(user.googleId, date);
   }
 
   @Get('date/:date')

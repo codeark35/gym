@@ -28,7 +28,8 @@ export function formatDateFull(dateStr: string): string {
 }
 
 export function todayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  // Use local date (not UTC) to match user's timezone
+  return new Date().toLocaleDateString('en-CA');
 }
 
 export function isToday(dateStr: string): boolean {
@@ -38,7 +39,7 @@ export function isToday(dateStr: string): boolean {
 export function daysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
+  return d.toLocaleDateString('en-CA');
 }
 
 export function formatDuration(minutes: number): string {

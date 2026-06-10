@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/axios';
 import type { Workout, PaginatedResponse } from '../../../types/workout.types';
+import { todayISO } from '../../../utils/date.utils';
 
 export function useWorkouts(page = 1) {
   return useQuery<PaginatedResponse<Workout>>({
@@ -26,10 +27,11 @@ export function useWorkout(id: string) {
 }
 
 export function useTodayWorkout() {
+  const today = todayISO();
   return useQuery<Workout | null>({
-    queryKey: ['workout', 'today'],
+    queryKey: ['workout', 'today', today],
     queryFn: async () => {
-      const res = await api.get<{ data: Workout | null }>('/workouts/today');
+      const res = await api.get<{ data: Workout | null }>(`/workouts/today?date=${today}`);
       return res.data.data ?? null;
     },
   });
