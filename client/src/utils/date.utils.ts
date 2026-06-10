@@ -29,7 +29,9 @@ export function formatDateFull(dateStr: string): string {
 
 export function todayISO(): string {
   // Use local date (not UTC) to match user's timezone
-  return new Date().toLocaleDateString('en-CA');
+  const result = new Date().toLocaleDateString('en-CA');
+  console.log('todayISO:', result);
+  return result;
 }
 
 export function isToday(dateStr: string): boolean {
@@ -58,5 +60,7 @@ export function dateToLocalISO(dateStr: string): string {
   const tzMinutes = Math.abs(tzOffset) % 60;
   const tzSign = tzOffset <= 0 ? '+' : '-';
   const tzStr = `${tzSign}${String(tzHours).padStart(2, '0')}:${String(tzMinutes).padStart(2, '0')}`;
-  return `${dateStr}T00:00:00${tzStr}`;
+  const result = `${dateStr}T00:00:00${tzStr}`;
+  console.log('dateToLocalISO:', { dateStr, result, tzOffset });
+  return result;
 }

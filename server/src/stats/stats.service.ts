@@ -15,6 +15,7 @@ export class StatsService {
     
     // Use local date from frontend or fallback to UTC-3
     const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
+    console.log('getSummary - dateStr:', dateStr, 'today:', today);
     
     const startOfWeek = new Date(today);
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
@@ -174,6 +175,7 @@ export class StatsService {
     // Use local date from frontend or fallback to UTC-3
     const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
     today.setHours(0, 0, 0, 0);
+    console.log('getWeeklyActivity - dateStr:', dateStr, 'today:', today);
     
     // Get start of week (Monday)
     const startOfWeek = new Date(today);
@@ -232,6 +234,7 @@ export class StatsService {
     const user = await this.usersService.findByGoogleId(googleId);
     const restDate = date ? parseLocalDate(date) : getTodayInTimezone();
     restDate.setHours(0, 0, 0, 0);
+    console.log('registerRestDay - date:', date, 'restDate:', restDate);
 
     return this.prisma.restDay.upsert({
       where: {
