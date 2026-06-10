@@ -183,14 +183,19 @@ export class StatsService {
       select: { date: true, status: true },
     });
 
-    // Get rest days for this week
-    const restDays = await this.prisma.restDay.findMany({
-      where: {
-        userId: user.id,
-        date: { gte: startOfWeek, lte: endOfWeek },
-      },
-      select: { date: true },
-    });
+    // Get rest days for this week (table may not exist yet — fallback to empty)
+    let restDays: { date: Date }[] = [];
+    try {
+      restDays = await this.prisma.restDay.findMany({
+        where: {
+          userId: user.id,
+          date: { gte: startOfWeek, lte: endOfWeek },
+        },
+        select: { date: true },
+      });
+    } catch (e: any) {
+      // table rest_days might not exist yet
+    }
 
     const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
     const activity: { day: string; status: string; intensity: number }[] = [];
@@ -216,22 +221,46 @@ export class StatsService {
     return activity;
   }
 
+  async getTodayRestDay(googleId: string, dateStr?: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
+    const date = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
+
+    try {
+      return await this.prisma.restDay.findUnique({
+        where: {
+          userId_date: {
+            userId: user.id,
+            date,
+          },
+        },
+      });
+    } catch (e: any) {
+      // table rest_days might not exist yet
+      return null;
+    }
+  }
+
   async registerRestDay(googleId: string, date?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
     const restDate = date ? parseLocalDate(date) : getTodayInTimezone();
 
-    return this.prisma.restDay.upsert({
-      where: {
-        userId_date: {
+    try {
+      return await this.prisma.restDay.upsert({
+        where: {
+          userId_date: {
+            userId: user.id,
+            date: restDate,
+          },
+        },
+        update: {},
+        create: {
           userId: user.id,
           date: restDate,
         },
-      },
-      update: {},
-      create: {
-        userId: user.id,
-        date: restDate,
-      },
-    });
+      });
+    } catch (e: any) {
+      console.error('registerRestDay failed:', e?.message ?? e);
+      return null;
+    }
   }
 }

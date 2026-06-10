@@ -33,8 +33,23 @@ export class StatsController {
     return this.statsService.getWeeklyActivity(user.googleId, date);
   }
 
+  @Get('rest-day')
+  getTodayRestDay(@CurrentUser() user: any, @Query('date') date?: string) {
+    return this.statsService.getTodayRestDay(user.googleId, date);
+  }
+
   @Post('rest-day')
-  registerRestDay(@CurrentUser() user: any, @Body('date') date: string) {
-    return this.statsService.registerRestDay(user.googleId, date);
+  async registerRestDay(@CurrentUser() user: any, @Body('date') date: string) {
+    try {
+      const result = await this.statsService.registerRestDay(user.googleId, date);
+      return { data: result };
+    } catch (error: any) {
+      console.error('Register rest day error:', error);
+      return {
+        error: true,
+        message: error?.message ?? 'Error al registrar día de descanso',
+        code: error?.code ?? 'UNKNOWN',
+      };
+    }
   }
 }

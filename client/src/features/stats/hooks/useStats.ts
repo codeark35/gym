@@ -58,6 +58,17 @@ export function useWeeklyActivity() {
   });
 }
 
+export function useTodayRestDay() {
+  const today = todayISO();
+  return useQuery({
+    queryKey: ['stats', 'rest-day', today],
+    queryFn: async () => {
+      const res = await api.get(`/stats/rest-day?date=${today}`);
+      return res.data.data ?? res.data;
+    },
+  });
+}
+
 export function useRegisterRestDay() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -66,8 +77,16 @@ export function useRegisterRestDay() {
       return res.data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats', 'rest-day'] });
       queryClient.invalidateQueries({ queryKey: ['stats', 'weekly-activity'] });
       queryClient.invalidateQueries({ queryKey: ['stats', 'summary'] });
+    },
+    onError: (err: any) => {
+      console.error('Rest day error:', err?.response?.data ?? err?.message ?? err);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats', 'rest-day'] });
+      queryClient.invalidateQueries({ queryKey: ['stats', 'weekly-activity'] });
     },
   });
 }

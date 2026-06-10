@@ -1,6 +1,6 @@
 import AppShell from '../../../components/layout/AppShell';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { useStats, useWeeklyActivity, useRegisterRestDay } from '../../stats/hooks/useStats';
+import { useStats, useWeeklyActivity, useRegisterRestDay, useTodayRestDay } from '../../stats/hooks/useStats';
 import { useTodayWorkout, useWorkoutsForDate } from '../../workouts/hooks/useWorkouts';
 import { todayISO } from '../../../utils/date.utils';
 import {
@@ -16,9 +16,11 @@ export default function DashboardPage() {
   const { data: todayWorkout } = useTodayWorkout();
   const { data: todayWorkouts } = useWorkoutsForDate(todayISO());
   const { data: weeklyActivity } = useWeeklyActivity();
+  const { data: todayRestDay } = useTodayRestDay();
   const registerRestDay = useRegisterRestDay();
 
   const completedCount = todayWorkouts?.filter((w) => w.status === 'COMPLETED').length ?? 0;
+  const hasRestDayToday = !!todayRestDay;
   const hasActiveWorkout = todayWorkout?.status === 'IN_PROGRESS';
 
   const todayDate = new Date().toLocaleDateString('es-ES', {
@@ -220,14 +222,25 @@ export default function DashboardPage() {
         </Link>
       </div>
       {!hasActiveWorkout && completedCount === 0 && (
-        <button 
-          onClick={handleRestDay}
-          className="btn btn-outline-info w-100 btn-action d-flex align-items-center justify-content-center"
-          disabled={registerRestDay.isPending}
-        >
-          <Moon size={18} className="me-2" />
-          {registerRestDay.isPending ? 'Registrando...' : 'Registrar día de descanso'}
-        </button>
+        <div>
+          {!hasRestDayToday ? (
+            <button 
+              onClick={handleRestDay}
+              className="btn btn-outline-info w-100 btn-action d-flex align-items-center justify-content-center"
+              disabled={registerRestDay.isPending}
+            >
+              <Moon size={18} className="me-2" />
+              {registerRestDay.isPending ? 'Registrando...' : 'Registrar día de descanso'}
+            </button>
+          ) : (
+            <div className="d-flex align-items-center justify-content-center gap-2 py-2">
+              <Moon size={16} style={{ color: '#94a3b8' }} />
+              <span className="small" style={{ color: '#94a3b8' }}>
+                Día de descanso registrado
+              </span>
+            </div>
+          )}
+        </div>
       )}
     </AppShell>
   );

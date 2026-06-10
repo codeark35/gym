@@ -8,11 +8,9 @@ export default function ReloadPrompt() {
   useEffect(() => {
     if (import.meta.env.DEV || !('serviceWorker' in navigator)) return;
 
-    let updateSW: ((reloadPage?: boolean) => Promise<void>) | null = null;
-
     import('virtual:pwa-register')
       .then(({ registerSW }) => {
-        updateSW = registerSW({
+        registerSW({
           onNeedRefresh() {
             setNeedRefresh(true);
           },
@@ -35,17 +33,13 @@ export default function ReloadPrompt() {
           });
 
           // Check for updates every 30 minutes
-          setInterval(() => {
+          const interval = setInterval(() => {
             reg.update().catch(() => {});
           }, 30 * 60 * 1000);
+
+          return interval;
         });
       });
-
-    return () => {
-      if (updateSW) {
-        updateSW(true);
-      }
-    };
   }, []);
 
   const handleUpdate = () => {
