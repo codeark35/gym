@@ -16,7 +16,17 @@ export class WorkoutsService {
   async create(googleId: string, dto: CreateWorkoutDto) {
     const user = await this.usersService.findByGoogleId(googleId);
 
-    const date = dto.date ? new Date(dto.date) : new Date();
+    let date: Date;
+    if (dto.date) {
+      // Parse the date string with timezone offset (e.g., "2026-06-09T00:00:00-03:00")
+      date = new Date(dto.date);
+      // Extract the local date components to avoid UTC conversion issues
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      date = localDate;
+    } else {
+      date = new Date();
+    }
+    date.setHours(0, 0, 0, 0);
 
     return this.prisma.workout.create({
       data: {
@@ -66,14 +76,17 @@ export class WorkoutsService {
   async findToday(googleId: string, dateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
     
-    // Use date from frontend if provided (local date), otherwise fallback to server UTC
+    // Use date from frontend if provided (local date with timezone offset)
     let today: Date;
     if (dateStr) {
-      today = new Date(dateStr + 'T00:00:00');
+      // Parse the date string with timezone offset (e.g., "2026-06-09T00:00:00-03:00")
+      const parsedDate = new Date(dateStr);
+      // Extract the local date components
+      today = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
     } else {
       today = new Date();
-      today.setHours(0, 0, 0, 0);
     }
+    today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -91,7 +104,10 @@ export class WorkoutsService {
 
   async findAllForDate(googleId: string, dateStr: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    const date = new Date(dateStr);
+    // Parse the date string with timezone offset (e.g., "2026-06-09T00:00:00-03:00")
+    const parsedDate = new Date(dateStr);
+    // Extract the local date components
+    const date = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
     date.setHours(0, 0, 0, 0);
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);

@@ -48,3 +48,15 @@ export function formatDuration(minutes: number): string {
   const m = minutes % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
+
+export function dateToLocalISO(dateStr: string): string {
+  // Convert a date string like "2026-06-09" to a local ISO string with timezone offset
+  // e.g., "2026-06-09T00:00:00-03:00"
+  const date = new Date(dateStr + 'T00:00:00');
+  const tzOffset = date.getTimezoneOffset(); // in minutes
+  const tzHours = Math.floor(Math.abs(tzOffset) / 60);
+  const tzMinutes = Math.abs(tzOffset) % 60;
+  const tzSign = tzOffset <= 0 ? '+' : '-';
+  const tzStr = `${tzSign}${String(tzHours).padStart(2, '0')}:${String(tzMinutes).padStart(2, '0')}`;
+  return `${dateStr}T00:00:00${tzStr}`;
+}

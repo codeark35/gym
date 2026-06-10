@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/axios';
 import type { Workout } from '../../../types/workout.types';
-import { todayISO } from '../../../utils/date.utils';
+import { todayISO, dateToLocalISO } from '../../../utils/date.utils';
 
 interface WorkoutSessionState {
   selectedDate: string;
@@ -103,7 +103,8 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
   const startWorkout = useCallback(async () => {
     setError(null);
     try {
-      const workout = await createMutation.mutateAsync({ date: selectedDate });
+      const localDate = dateToLocalISO(selectedDate);
+      const workout = await createMutation.mutateAsync({ date: localDate });
       setActiveWorkout(workout);
       // Actualizar cache en background
       qc.setQueryData(['workout', 'active', selectedDate], workout);
