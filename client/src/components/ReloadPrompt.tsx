@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { RefreshCw } from 'lucide-react';
 
 export default function ReloadPrompt() {
   const [needRefresh, setNeedRefresh] = useState(false);
   const [offlineReady, setOfflineReady] = useState(false);
+  const updateSW = useRef<((reload?: boolean) => Promise<void>) | null>(null);
+  const waitingWorker = useRef<ServiceWorker | null>(null);
 
   useEffect(() => {
     if (import.meta.env.DEV || !('serviceWorker' in navigator)) return;
 
     import('virtual:pwa-register')
       .then(({ registerSW }) => {
-        registerSW({
+        updateSW.current = registerSW({
           onNeedRefresh() {
             setNeedRefresh(true);
           },
@@ -23,10 +25,18 @@ export default function ReloadPrompt() {
       .catch(() => {
         // Fallback: manual registration and update detection
         navigator.serviceWorker.register('/sw.js').then((reg) => {
+          // Check if there's already a waiting worker
+          if (reg.waiting) {
+            waitingWorker.current = reg.waiting;
+            setNeedRefresh(true);
+          }
+
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
-            newWorker?.addEventListener('statechange', () => {
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                waitingWorker.current = newWorker;
                 setNeedRefresh(true);
               }
             });
@@ -37,14 +47,27 @@ export default function ReloadPrompt() {
             reg.update().catch(() => {});
           }, 30 * 60 * 1000);
 
-          return interval;
+          return () => clearInterval(interval);
         });
       });
   }, []);
 
   const handleUpdate = () => {
     setNeedRefresh(false);
-    window.location.reload();
+
+    if (updateSW.current) {
+      // vite-plugin-pwa: skip waiting + reload
+      updateSW.current(true);
+    } else if (waitingWorker.current) {
+      // Fallback: tell SW to skip waiting, then reload
+      waitingWorker.current.postMessage({ type: 'SKIP_WAITING' });
+      // Wait for controllerchange before reloading
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      }, { once: true });
+    } else {
+      window.location.reload();
+    }
   };
 
   const handleDismiss = () => {
