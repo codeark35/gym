@@ -102,12 +102,17 @@ export class WorkoutsService {
     });
   }
 
-  async findAllForDate(googleId: string, dateStr: string) {
+  async findAllForDate(googleId: string, dateStr: string, localDateStr?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    // Parse the date string with timezone offset (e.g., "2026-06-09T00:00:00-03:00")
-    const parsedDate = new Date(dateStr);
-    // Extract the local date components
-    const date = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
+    let date: Date;
+    if (localDateStr) {
+      // Parse the date string with timezone offset (e.g., "2026-06-09T00:00:00-03:00")
+      const parsedDate = new Date(localDateStr);
+      // Extract the local date components
+      date = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
+    } else {
+      date = new Date(dateStr);
+    }
     date.setHours(0, 0, 0, 0);
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);

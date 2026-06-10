@@ -46,11 +46,12 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
   const { isLoading: isLoadingQuery, data: queryWorkout } = useQuery<Workout | null>({
     queryKey: ['workout', 'active', selectedDate],
     queryFn: async () => {
+      const localDate = dateToLocalISO(selectedDate);
       if (selectedDate === todayISO()) {
-        const res = await api.get<{ data: Workout | null }>('/workouts/today');
+        const res = await api.get<{ data: Workout | null }>(`/workouts/today?date=${localDate}`);
         return res.data.data ?? null;
       } else {
-        const res = await api.get<{ data: Workout[] }>(`/workouts/date/${selectedDate}`);
+        const res = await api.get<{ data: Workout[] }>(`/workouts/date/${selectedDate}?localDate=${localDate}`);
         const workouts = res.data.data ?? [];
         return workouts.find((w: Workout) => w.status === 'IN_PROGRESS') ?? null;
       }

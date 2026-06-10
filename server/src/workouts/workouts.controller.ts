@@ -30,8 +30,8 @@ export class WorkoutsController {
   }
 
   @Get('date/:date')
-  findAllForDate(@CurrentUser() user: any, @Param('date') date: string) {
-    return this.workoutsService.findAllForDate(user.googleId, date);
+  findAllForDate(@CurrentUser() user: any, @Param('date') date: string, @Query('localDate') localDate?: string) {
+    return this.workoutsService.findAllForDate(user.googleId, date, localDate);
   }
 
   @Get()
