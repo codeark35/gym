@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import type { Exercise } from '../../../types/workout.types';
+
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import ExerciseCard from './ExerciseCard';
 import ExercisePicker from '../../exercises/components/ExercisePicker';
 import WorkoutSummary from './WorkoutSummary';
+import RoutinePicker from '../../routines/components/RoutinePicker';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { formatDateFull, todayISO } from '../../../utils/date.utils';
 import { totalVolume, formatVolume } from '../../../utils/volume.utils';
@@ -22,12 +24,14 @@ export default function WorkoutLogger() {
     error,
     setSelectedDate,
     startWorkout,
+    startWorkoutFromRoutine,
     finishWorkout,
     cancelWorkout,
     isStarting,
     isFinishing,
   } = useActiveWorkout();
 
+  const [showRoutinePicker, setShowRoutinePicker] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [showSummary, setShowSummary] = useState(false);
@@ -92,7 +96,7 @@ export default function WorkoutLogger() {
     );
   }
 
-  // If no active workout OR workout is completed, show start screen
+  // If no active workout OR workout is completed, show start screen with routine picker option
   if (!workout || workout.status === 'COMPLETED') {
     return (
       <div className="fade-in">
@@ -121,7 +125,7 @@ export default function WorkoutLogger() {
             {selectedDate === todayISO() ? '¿Listo para entrenar?' : 'Registrar entrenamiento'}
           </h5>
           <p className="text-white-50 small">
-            Seleccioná la fecha y empezá a registrar tus series
+            Seleccioná la fecha y elegí cómo querés entrenar
           </p>
 
           <div className="mb-3">
@@ -173,18 +177,22 @@ export default function WorkoutLogger() {
           )}
 
           <button
-            className="btn btn-primary btn-lg btn-action px-5"
-            onClick={startWorkout}
-            disabled={isStarting}
+            className="btn btn-warning btn-lg btn-action px-5 mt-2"
+            onClick={() => setShowRoutinePicker(true)}
           >
-            {isStarting ? (
-              <span className="spinner-border spinner-border-sm me-2" />
-            ) : (
-              <Zap size={18} className="me-2" />
-            )}
+            <Zap size={18} className="me-2" />
             {selectedDate === todayISO() ? 'Iniciar entrenamiento' : 'Registrar entrenamiento'}
           </button>
         </div>
+
+        <RoutinePicker
+          show={showRoutinePicker}
+          onHide={() => setShowRoutinePicker(false)}
+          selectedDate={selectedDate}
+          onStartFree={startWorkout}
+          onStartRoutine={startWorkoutFromRoutine}
+          isStarting={isStarting}
+        />
       </div>
     );
   }
@@ -285,8 +293,8 @@ export default function WorkoutLogger() {
         )}
       </div>
 
-      {/* Cancel empty workout */}
-      {allSets.length === 0 && workout.status === 'IN_PROGRESS' && (
+      {/* Cancel workout */}
+      {workout.status === 'IN_PROGRESS' && (
         <div className="mt-2">
           <button
             className="btn btn-outline-danger w-100 btn-action"

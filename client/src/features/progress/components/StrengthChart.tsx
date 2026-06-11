@@ -1,14 +1,30 @@
+import { useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, ReferenceDot,
 } from 'recharts';
-import type { ProgressEntry } from '../../../types/workout.types';
 
-interface StrengthChartProps {
-  data: ProgressEntry[];
-  metric: 'maxWeightKg' | 'bestOneRepMax';
+interface ChartPoint {
+  date: string;
+  value: number;
+  isPR: boolean;
 }
 
-const CustomTooltip = ({ active, payload, label, metric }: any) => {
+interface StrengthChartProps {
+  data: ChartPoint[];
+  metric: string;
+}
+
+interface TooltipPayload {
+  value: number;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: TooltipPayload[];
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label, metric }: TooltipProps & { metric: string }) => {
   if (active && payload && payload.length) {
     const value = payload[0].value;
     return (
@@ -27,9 +43,7 @@ const CustomTooltip = ({ active, payload, label, metric }: any) => {
         <div className="fw-bold" style={{ color: '#fbbf24' }}>
           {value} kg
         </div>
-        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-          {metric === 'bestOneRepMax' ? '1RM estimado' : 'Peso máx.'}
-        </div>
+        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{metric}</div>
       </div>
     );
   }
@@ -37,11 +51,10 @@ const CustomTooltip = ({ active, payload, label, metric }: any) => {
 };
 
 export default function StrengthChart({ data, metric }: StrengthChartProps) {
-  const formatted = data.map((d) => ({
-    ...d,
-    label: d.date,
-    value: d[metric],
-  }));
+  const formatted = useMemo(
+    () => data.map((d) => ({ ...d, label: d.date })),
+    [data],
+  );
 
   return (
     <ResponsiveContainer width="100%" height={220}>

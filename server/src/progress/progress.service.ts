@@ -9,13 +9,20 @@ export class ProgressService {
     private readonly usersService: UsersService,
   ) {}
 
-  async getExerciseProgress(googleId: string, exerciseId: string) {
+  async getExerciseProgress(googleId: string, exerciseId: string, from?: string, to?: string) {
     const user = await this.usersService.findByGoogleId(googleId);
+
+    const dateFilter: any = {};
+    if (from) dateFilter.gte = new Date(from);
+    if (to) dateFilter.lte = new Date(to);
 
     const sets = await this.prisma.set.findMany({
       where: {
         exerciseId,
-        workout: { userId: user.id },
+        workout: {
+          userId: user.id,
+          ...(Object.keys(dateFilter).length > 0 && { date: dateFilter }),
+        },
         isWarmup: false,
       },
       include: { workout: { select: { date: true } } },

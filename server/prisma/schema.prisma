@@ -9,33 +9,39 @@ datasource db {
 // ─── Usuarios ────────────────────────────────────────────────
 
 model User {
-  id             String       @id @default(cuid())
-  googleId       String       @unique  // ID de Google OAuth
-  email          String       @unique
+  id             String         @id @default(cuid())
+  googleId       String         @unique  // ID de Google OAuth
+  email          String         @unique
   name           String
   avatarUrl      String?
   profile        UserProfile?
   workouts       Workout[]
-  exercises      Exercise[]   // ejercicios personalizados del usuario
+  exercises      Exercise[]     // ejercicios personalizados del usuario
   bodyMetrics    BodyMetric[]
   restDays       RestDay[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  routines       Routine[]
+  notifications  Notification[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@map("users")
 }
 
 model UserProfile {
-  id              String          @id @default(cuid())
-  userId          String          @unique
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  birthDate       DateTime?
-  weightKg        Float?
-  heightCm        Float?
-  fitnessGoal     FitnessGoal     @default(STRENGTH)
-  experienceLevel ExperienceLevel @default(INTERMEDIATE)
-  preferredUnit   WeightUnit      @default(KG)
-  updatedAt       DateTime        @updatedAt
+  id                      String          @id @default(cuid())
+  userId                  String          @unique
+  user                    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthDate               DateTime?
+  weightKg                Float?
+  heightCm                Float?
+  fitnessGoal             FitnessGoal     @default(STRENGTH)
+  experienceLevel         ExperienceLevel @default(INTERMEDIATE)
+  preferredUnit           WeightUnit      @default(KG)
+  enableAISuggestions     Boolean         @default(true)
+  enableOvertrainingAlerts  Boolean         @default(true)
+  enableRoutineSuggestions  Boolean         @default(true)
+  enablePRNotifications     Boolean         @default(true)
+  updatedAt               DateTime        @updatedAt
 
   @@map("user_profiles")
 }
@@ -50,10 +56,12 @@ model Exercise {
   secondaryMuscles MuscleGroup[]
   equipment        Equipment     @default(BARBELL)
   movementType     MovementType
+  imageUrl         String?       // URL de imagen ilustrativa del ejercicio
   isGlobal         Boolean       @default(false) // true = catálogo global
   userId           String?       // null si es global
   user             User?         @relation(fields: [userId], references: [id])
   sets             Set[]
+  routineExercises RoutineExercise[]
   createdAt        DateTime      @default(now())
 
   @@unique([name, userId])
@@ -118,6 +126,37 @@ model BodyMetric {
   @@map("body_metrics")
 }
 
+// ─── Rutinas (plantillas de entrenamiento) ───────────────────
+
+model Routine {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String            // "Día A - Push", "Rutina de pierna"
+  description String?
+  isActive    Boolean           @default(true)
+  exercises   RoutineExercise[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("routines")
+}
+
+model RoutineExercise {
+  id             String    @id @default(cuid())
+  routineId      String
+  routine        Routine   @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exerciseId     String
+  exercise       Exercise  @relation(fields: [exerciseId], references: [id])
+  sortOrder      Int       // orden dentro de la rutina
+  targetSets     Int       @default(3)
+  targetReps     Int       @default(10)
+  targetWeightKg Float?
+  notes          String?
+
+  @@map("routine_exercises")
+}
+
 model RestDay {
   id        String   @id @default(cuid())
   userId    String
@@ -127,6 +166,24 @@ model RestDay {
 
   @@unique([userId, date])
   @@map("rest_days")
+}
+
+// ─── Notificaciones ──────────────────────────────────────────
+
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?             // payload adicional (ej: { exerciseId, workoutId })
+  readAt      DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 // ─── Enums ───────────────────────────────────────────────────
@@ -188,4 +245,13 @@ enum ExperienceLevel {
 enum WeightUnit {
   KG
   LB
+}
+
+enum NotificationType {
+  SUGGESTION
+  OVERTRAINING
+  ROUTINE
+  GENERAL
+  PR
+  SYSTEM
 }

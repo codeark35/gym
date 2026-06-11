@@ -1,12 +1,29 @@
+import { useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 
-interface VolumeChartProps {
-  data: { date?: string; week?: string; totalVolume: number }[];
+interface VolumePoint {
+  date?: string;
+  week?: string;
+  totalVolume: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface VolumeChartProps {
+  data: VolumePoint[];
+}
+
+interface TooltipPayload {
+  value: number;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: TooltipPayload[];
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div
@@ -32,13 +49,19 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function VolumeChart({ data }: VolumeChartProps) {
-  const formatted = data.map((d) => ({
-    ...d,
-    label: d.date ?? d.week,
-    totalVolume: Math.round(d.totalVolume),
-  }));
+  const formatted = useMemo(
+    () => data.map((d) => ({
+      ...d,
+      label: d.date ?? d.week,
+      totalVolume: Math.round(d.totalVolume),
+    })),
+    [data],
+  );
 
-  const maxVol = Math.max(...formatted.map((d) => d.totalVolume), 1);
+  const maxVol = useMemo(
+    () => Math.max(...formatted.map((d) => d.totalVolume), 1),
+    [formatted],
+  );
 
   return (
     <ResponsiveContainer width="100%" height={200}>

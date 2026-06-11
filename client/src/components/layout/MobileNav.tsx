@@ -1,9 +1,10 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Dumbbell, TrendingUp, BarChart2, User } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, TrendingUp, BarChart2, User, List } from 'lucide-react';
 
 const tabs = [
   { to: '/', label: 'Inicio', icon: LayoutDashboard },
   { to: '/workout', label: 'Entreno', icon: Dumbbell },
+  { to: '/routines', label: 'Rutinas', icon: List },
   { to: '/progress', label: 'Progreso', icon: TrendingUp },
   { to: '/stats', label: 'Stats', icon: BarChart2 },
   { to: '/profile', label: 'Perfil', icon: User },

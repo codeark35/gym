@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import { RoutinesService } from '../routines/routines.service';
 import { CreateWorkoutDto, UpdateWorkoutDto } from './dto/workout.dto';
 import { parseLocalDate, getTodayInTimezone } from '../common/utils/date.utils';
 
@@ -12,6 +13,7 @@ export class WorkoutsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
+    private readonly routinesService: RoutinesService,
   ) {}
 
   async create(googleId: string, dto: CreateWorkoutDto) {
@@ -120,5 +122,41 @@ export class WorkoutsService {
     if (!workout) throw new NotFoundException('Workout no encontrado');
     await this.prisma.workout.delete({ where: { id } });
     return { message: 'Workout eliminado' };
+  }
+
+  async createFromRoutine(googleId: string, routineId: string, date?: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
+    const routine = await this.routinesService.findOne(googleId, routineId);
+
+    const workoutDate = date ? parseLocalDate(date) : getTodayInTimezone();
+
+    const workout = await this.prisma.workout.create({
+      data: {
+        userId: user.id,
+        date: workoutDate,
+        name: routine.name,
+        sets: {
+          create: routine.exercises.flatMap((re) => {
+            const sets: any[] = [];
+            for (let i = 1; i <= re.targetSets; i++) {
+              sets.push({
+                exerciseId: re.exerciseId,
+                setNumber: i,
+                reps: re.targetReps,
+                weightKg: re.targetWeightKg ?? 0,
+                oneRepMax: re.targetWeightKg
+                  ? Math.round(re.targetWeightKg * (1 + re.targetReps / 30) * 10) / 10
+                  : 0,
+                volume: re.targetReps * (re.targetWeightKg ?? 0),
+              });
+            }
+            return sets;
+          }),
+        },
+      },
+      include: { sets: { include: { exercise: true } } },
+    });
+
+    return workout;
   }
 }

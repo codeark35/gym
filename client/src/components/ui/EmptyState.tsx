@@ -11,8 +11,8 @@ export default function EmptyState({ icon: Icon, title, description, action }: E
   return (
     <div className="text-center py-5 px-3">
       {Icon && <Icon size={48} className="text-secondary mb-3" />}
-      <h5 className="fw-semibold">{title}</h5>
-      {description && <p className="text-muted small">{description}</p>}
+      <h5 className="fw-semibold text-white">{title}</h5>
+      {description && <p className="text-white-50 small">{description}</p>}
       {action && (
         <button className="btn btn-primary mt-2" onClick={action.onClick}>
           {action.label}

@@ -15,6 +15,7 @@ interface WorkoutSessionState {
 interface UseActiveWorkoutReturn extends WorkoutSessionState {
   setSelectedDate: (date: string) => void;
   startWorkout: () => Promise<void>;
+  startWorkoutFromRoutine: (routineId: string) => Promise<void>;
   finishWorkout: () => Promise<void>;
   cancelWorkout: () => Promise<void>;
   clearLastCompleted: () => void;
@@ -78,6 +79,17 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
     },
   });
 
+  // Crear workout desde rutina
+  const createFromRoutineMutation = useMutation({
+    mutationFn: async (data: { routineId: string; date: string }) => {
+      const res = await api.post<{ data: Workout }>(
+        `/workouts/from-routine/${data.routineId}`,
+        { date: data.date },
+      );
+      return res.data.data ?? res.data;
+    },
+  });
+
   // Finalizar workout
   const finishMutation = useMutation({
     mutationFn: async ({ id }: { id: string }) => {
@@ -113,6 +125,22 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
       throw err;
     }
   }, [selectedDate, createMutation, qc]);
+
+  const startWorkoutFromRoutine = useCallback(async (routineId: string) => {
+    setError(null);
+    try {
+      const workout = await createFromRoutineMutation.mutateAsync({
+        routineId,
+        date: selectedDate,
+      });
+      setActiveWorkout(workout);
+      qc.setQueryData(['workout', 'active', selectedDate], workout);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Error al iniciar rutina';
+      setError(msg);
+      throw err;
+    }
+  }, [selectedDate, createFromRoutineMutation, qc]);
 
   const finishWorkout = useCallback(async () => {
     if (!activeWorkout?.id) {
@@ -175,12 +203,13 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
     error,
     setSelectedDate,
     startWorkout,
+    startWorkoutFromRoutine,
     finishWorkout,
     cancelWorkout,
     clearLastCompleted,
     resetWorkout,
     refreshWorkout,
-    isStarting: createMutation.isPending,
+    isStarting: createMutation.isPending || createFromRoutineMutation.isPending,
     isFinishing: finishMutation.isPending,
     isCancelling: cancelMutation.isPending,
   };

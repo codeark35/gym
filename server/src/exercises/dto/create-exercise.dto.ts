@@ -28,4 +28,8 @@ export class CreateExerciseDto {
 
   @IsEnum(MovementType)
   movementType: MovementType;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }

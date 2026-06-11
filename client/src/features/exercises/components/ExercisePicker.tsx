@@ -77,17 +77,48 @@ export default function ExercisePicker({ show, onHide, onSelect }: ExercisePicke
           ) : filtered.length === 0 ? (
             <p className="text-muted text-center py-4 small">No se encontraron ejercicios</p>
           ) : (
-            <ul className="list-group list-group-flush">
+                <ul className="list-group list-group-flush">
               {filtered.map((ex) => (
                 <li
                   key={ex.id}
-                  className="list-group-item list-group-item-action py-3 px-3"
-                  style={{ cursor: 'pointer', minHeight: 56 }}
+                  className="list-group-item list-group-item-action py-2 px-3 d-flex align-items-center gap-3"
+                  style={{ cursor: 'pointer', minHeight: 64 }}
                   onClick={() => onSelect(ex)}
                 >
-                  <div className="fw-medium">{ex.nameEs ?? ex.name}</div>
-                  <div className="small text-muted">
-                    {MUSCLE_GROUP_LABELS[ex.muscleGroup as MuscleGroup]}
+                  {ex.imageUrl ? (
+                    <img
+                      src={ex.imageUrl}
+                      alt={ex.name}
+                      className="flex-shrink-0"
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 10,
+                        objectFit: 'cover',
+                        background: '#f1f5f9',
+                      }}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div
+                      className="flex-shrink-0 d-flex align-items-center justify-content-center"
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 10,
+                        background: 'linear-gradient(135deg, #1e3a5f, #2d4a6f)',
+                      }}
+                    >
+                      <span style={{ color: '#fbbf24', fontSize: '1.25rem', fontWeight: 700 }}>
+                        {ex.name.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0 }}>
+                    <div className="fw-medium text-truncate">{ex.nameEs ?? ex.name}</div>
+                    <div className="small text-muted">
+                      {MUSCLE_GROUP_LABELS[ex.muscleGroup as MuscleGroup]}
+                    </div>
                   </div>
                 </li>
               ))}

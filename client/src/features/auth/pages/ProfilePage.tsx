@@ -96,6 +96,7 @@ export default function ProfilePage() {
 
         <button
           className="btn d-flex align-items-center gap-3 py-3 px-3 text-start"
+          onClick={() => navigate('/settings')}
           style={{
             borderRadius: 14,
             background: 'rgba(255, 255, 255, 0.03)',

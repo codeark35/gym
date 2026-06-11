@@ -24,6 +24,15 @@ export class WorkoutsController {
     return this.workoutsService.create(user.googleId, dto);
   }
 
+  @Post('from-routine/:routineId')
+  createFromRoutine(
+    @CurrentUser() user: any,
+    @Param('routineId') routineId: string,
+    @Body('date') date?: string,
+  ) {
+    return this.workoutsService.createFromRoutine(user.googleId, routineId, date);
+  }
+
   @Get('today')
   findToday(@CurrentUser() user: any, @Query('date') date?: string) {
     return this.workoutsService.findToday(user.googleId, date);

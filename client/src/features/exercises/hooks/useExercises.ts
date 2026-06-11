@@ -9,6 +9,8 @@ export function useExercises() {
       const res = await api.get<{ data: Exercise[] }>('/exercises');
       return (res.data.data ?? res.data) as Exercise[];
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 }
 

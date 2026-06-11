@@ -112,14 +112,30 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId, is
         }}
       >
         <div className="d-flex align-items-center gap-2 overflow-hidden">
-          <div
-            className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-            style={{ width: 28, height: 28, background: color.text, opacity: 0.9 }}
-          >
-            <span className="text-white fw-bold" style={{ fontSize: '0.75rem' }}>
-              {sets.length}
-            </span>
-          </div>
+          {exercise.imageUrl ? (
+            <img
+              src={exercise.imageUrl}
+              alt={exercise.name}
+              className="flex-shrink-0"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                objectFit: 'cover',
+                background: '#f1f5f9',
+              }}
+              loading="lazy"
+            />
+          ) : (
+            <div
+              className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+              style={{ width: 28, height: 28, background: color.text, opacity: 0.9 }}
+            >
+              <span className="text-white fw-bold" style={{ fontSize: '0.75rem' }}>
+                {sets.length}
+              </span>
+            </div>
+          )}
           <div className="min-w-0">
             <div className="fw-semibold text-truncate" style={{ color: '#1e293b', fontSize: '0.9375rem' }}>
               {exercise.nameEs ?? exercise.name}

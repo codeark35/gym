@@ -12,8 +12,10 @@ export class ProgressController {
   getExerciseProgress(
     @CurrentUser() user: any,
     @Param('exerciseId') exerciseId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
-    return this.progressService.getExerciseProgress(user.googleId, exerciseId);
+    return this.progressService.getExerciseProgress(user.googleId, exerciseId, from, to);
   }
 
   @Get('exercise/:exerciseId/pr')

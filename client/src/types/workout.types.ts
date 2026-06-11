@@ -20,6 +20,7 @@ export interface Exercise {
   secondaryMuscles: MuscleGroup[];
   equipment: Equipment;
   movementType: MovementType;
+  imageUrl?: string;
   isGlobal: boolean;
 }
 

@@ -1,5 +1,6 @@
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import NotificationBell from '../ui/NotificationBell';
 import logo from '../../assets/logo.png';
 
 export default function TopBar() {
@@ -18,14 +19,14 @@ export default function TopBar() {
           <span className="d-none d-sm-inline">GymTracker Pro</span>
         </span>
         {user && (
-          <div className="d-flex align-items-center gap-2">
-            <span className="small text-white-50 d-none d-sm-inline">{user.name}</span>
+          <div className="d-flex align-items-center gap-3">
+            <NotificationBell />
             <div
               className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
               style={{
                 width: 32,
                 height: 32,
-background: '#1e3a5f',
+                background: '#1e3a5f',
                 fontSize: '0.75rem',
                 cursor: 'pointer',
               }}
