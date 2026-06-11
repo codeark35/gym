@@ -67,10 +67,10 @@ export default function SettingsPage() {
       </div>
 
       {/* Notification settings */}
-      <div className="card mb-4" style={{ border: 'none', borderRadius: 16 }}>
-        <div className="card-header py-3 d-flex align-items-center gap-2" style={{ borderRadius: '16px 16px 0 0' }}>
+      <div className="card card-dark mb-4" style={{ border: 'none', borderRadius: 16 }}>
+        <div className="card-header py-3 d-flex align-items-center gap-2" style={{ borderRadius: '16px 16px 0 0', background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <Bell size={18} style={{ color: '#fbbf24' }} />
-          <span className="fw-semibold">Notificaciones de IA</span>
+          <span className="fw-semibold text-white">Notificaciones de IA</span>
         </div>
         <div className="card-body p-0">
           {isLoading ? (
