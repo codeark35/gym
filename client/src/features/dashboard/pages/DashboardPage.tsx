@@ -5,7 +5,7 @@ import { useTodayWorkout, useWorkoutsForDate } from '../../workouts/hooks/useWor
 import { todayISO } from '../../../utils/date.utils';
 import {
   Dumbbell, TrendingUp, ArrowRight, Flame, CheckCircle2,
-  CircleDot, Play, Zap, User, Target, CalendarDays, Moon
+  CircleDot, Play, Zap, Target, CalendarDays, Moon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
