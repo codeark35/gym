@@ -9,7 +9,7 @@ import { dateToLocalString } from '../common/utils/date.utils';
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly genai: GoogleGenAI;
-  private readonly model = 'gemini-2.0-flash';
+  private readonly model = 'gemini-3.5-flash';
   private readonly timeoutMs = 15000;
 
   constructor(
