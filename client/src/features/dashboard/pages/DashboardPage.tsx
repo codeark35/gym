@@ -1,18 +1,19 @@
 import AppShell from '../../../components/layout/AppShell';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import EmptyState from '../../../components/ui/EmptyState';
 import { useStats, useWeeklyActivity, useRegisterRestDay, useTodayRestDay } from '../../stats/hooks/useStats';
 import { useTodayWorkout, useWorkoutsForDate } from '../../workouts/hooks/useWorkouts';
 import { todayISO } from '../../../utils/date.utils';
 import {
   Dumbbell, TrendingUp, ArrowRight, Flame, CheckCircle2,
-  CircleDot, Play, Zap, Target, CalendarDays, Moon
+  CircleDot, Play, Zap, Target, CalendarDays, Moon, AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { data: stats, isLoading } = useStats();
+  const { data: stats, isLoading: loadingStats, error: statsError } = useStats();
   const { data: todayWorkout } = useTodayWorkout();
   const { data: todayWorkouts } = useWorkoutsForDate(todayISO());
   const { data: weeklyActivity } = useWeeklyActivity();
@@ -52,20 +53,10 @@ export default function DashboardPage() {
             <div style={{ width: 6, height: 3, borderRadius: 2, background: '#2d6a4f' }} />
           </div>
         </div>
-        {/* <div
-          className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-          style={{
-            width: 48, height: 48, fontSize: '1.25rem',
-            background: 'linear-gradient(135deg, #1e3a5f, #2d4a6f)',
-            boxShadow: '0 4px 12px rgba(30, 58, 95, 0.4)'
-          }}
-        >
-          {user?.name?.[0]?.toUpperCase() ?? <User size={24} />}
-        </div> */}
       </div>
 
       {/* ─── Status Card ─── */}
-      <div className="card mb-4" style={{ border: 'none', borderRadius: 20, overflow: 'hidden' }}>
+      <div className="card mb-4" style={{ border: 'none', borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(135deg, #1e293b, #0f172a)' }}>
         {hasActiveWorkout ? (
           <div className="card-body p-0 position-relative">
             <div className="position-absolute" style={{ top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%)' }} />
@@ -115,37 +106,56 @@ export default function DashboardPage() {
       </div>
 
       {/* ─── Quick Stats Row (compact) ─── */}
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : stats ? (
-        <div className="d-flex gap-2 mb-4">
-          <Link to="/workouts" className="card flex-fill text-center py-2 text-decoration-none" style={{ border: 'none', borderRadius: 12 }}>
-            <div className="fw-bold" style={{ fontSize: '1.25rem', color: '#1e3a5f' }}>{stats.totalWorkouts}</div>
-            <div className="small" style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>Workouts</div>
-          </Link>
-          <div className="card flex-fill text-center py-2" style={{ border: 'none', borderRadius: 12 }}>
-            <div className="fw-bold" style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{stats.currentStreak}</div>
-            <div className="small" style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>Racha</div>
-          </div>
-          <div className="card flex-fill text-center py-2" style={{ border: 'none', borderRadius: 12 }}>
-            <div className="fw-bold" style={{ fontSize: '1.25rem', color: '#2d6a4f' }}>{stats.uniqueExercises}</div>
-            <div className="small" style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>Ejercicios</div>
+      {loadingStats ? (
+        <div className="d-flex justify-content-center py-3 mb-4">
+          <LoadingSpinner size="sm" />
+        </div>
+      ) : statsError ? (
+        <div className="card mb-4" style={{ border: 'none', borderRadius: 16, background: 'linear-gradient(135deg, #1e293b, #0f172a)' }}>
+          <div className="card-body p-3 d-flex align-items-center gap-2">
+            <AlertCircle size={18} style={{ color: '#ef4444' }} />
+            <span className="text-white-50 small">Error cargando estadísticas</span>
           </div>
         </div>
-      ) : null}
+      ) : stats ? (
+        <div className="d-flex gap-2 mb-4">
+          <Link to="/workouts" className="card card-dark flex-fill text-center py-2 text-decoration-none" style={{ border: 'none', borderRadius: 12 }}>
+            <div className="fw-bold text-white" style={{ fontSize: '1.25rem' }}>{stats.totalWorkouts}</div>
+            <div className="small text-white-50" style={{ fontSize: '0.6875rem' }}>Workouts</div>
+          </Link>
+          <div className="card card-dark flex-fill text-center py-2" style={{ border: 'none', borderRadius: 12 }}>
+            <div className="fw-bold text-white" style={{ fontSize: '1.25rem' }}>{stats.currentStreak}</div>
+            <div className="small text-white-50" style={{ fontSize: '0.6875rem' }}>Racha</div>
+          </div>
+          <div className="card card-dark flex-fill text-center py-2" style={{ border: 'none', borderRadius: 12 }}>
+            <div className="fw-bold text-white" style={{ fontSize: '1.25rem' }}>{stats.uniqueExercises}</div>
+            <div className="small text-white-50" style={{ fontSize: '0.6875rem' }}>Ejercicios</div>
+          </div>
+        </div>
+      ) : (
+        <div className="card mb-4" style={{ border: 'none', borderRadius: 16, background: 'linear-gradient(135deg, #1e293b, #0f172a)' }}>
+          <div className="card-body p-3 text-center">
+            <EmptyState title="Sin datos" description="Completá tu primer entrenamiento para ver estadísticas" />
+          </div>
+        </div>
+      )}
 
       {/* ─── Weekly Activity ─── */}
-      {stats && (
-        <div className="card mb-4" style={{ border: 'none', borderRadius: 16 }}>
+      {loadingStats ? (
+        <div className="d-flex justify-content-center py-3 mb-4">
+          <LoadingSpinner size="sm" />
+        </div>
+      ) : statsError ? null : (
+        <div className="card card-dark mb-4" style={{ border: 'none', borderRadius: 16 }}>
           <div className="card-body p-3">
             <div className="d-flex align-items-center justify-content-between mb-3">
               <div className="d-flex align-items-center gap-2">
                 <div style={{ width: 4, height: 16, background: '#2d6a4f', borderRadius: 2 }} />
-                <span className="small fw-bold text-uppercase" style={{ letterSpacing: 1, fontSize: '0.75rem', color: '#64748b' }}>
+                <span className="small fw-bold text-uppercase text-white-50" style={{ letterSpacing: 1, fontSize: '0.75rem' }}>
                   Actividad semanal
                 </span>
               </div>
-              <Link to="/stats" className="small fw-semibold" style={{ color: '#1e3a5f', fontSize: '0.75rem', textDecoration: 'none' }}>
+              <Link to="/stats" className="small fw-semibold text-decoration-none" style={{ color: '#38bdf8', fontSize: '0.75rem' }}>
                 Ver stats →
               </Link>
             </div>
@@ -158,30 +168,30 @@ export default function DashboardPage() {
                       height: `${day.intensity}%`,
                       background: day.status === 'completed' ? 'linear-gradient(to top, #2d6a4f, #34d399)' : 
                                   day.status === 'active' ? 'linear-gradient(to top, #f59e0b, #fbbf24)' : 
-                                  day.status === 'rest' ? 'linear-gradient(to top, #475569, #94a3b8)' : '#e2e8f0',
+                                  day.status === 'rest' ? 'linear-gradient(to top, #475569, #94a3b8)' : '#334155',
                       borderRadius: 4, minHeight: 4, transition: 'height 0.3s ease',
                     }}
                   />
-                  <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>{weekDays[i]}</span>
+                  <span className="small text-white-50" style={{ fontSize: '0.625rem' }}>{weekDays[i]}</span>
                 </div>
               ))}
             </div>
             <div className="d-flex align-items-center gap-2 mt-2">
               <div className="d-flex align-items-center gap-1">
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: '#2d6a4f' }} />
-                <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Entreno</span>
+                <span className="small text-white-50" style={{ fontSize: '0.625rem' }}>Entreno</span>
               </div>
               <div className="d-flex align-items-center gap-1">
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: '#f59e0b' }} />
-                <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Activo</span>
+                <span className="small text-white-50" style={{ fontSize: '0.625rem' }}>Activo</span>
               </div>
               <div className="d-flex align-items-center gap-1">
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: '#475569' }} />
-                <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Descanso</span>
+                <span className="small text-white-50" style={{ fontSize: '0.625rem' }}>Descanso</span>
               </div>
               <div className="d-flex align-items-center gap-1">
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: '#e2e8f0' }} />
-                <span className="small" style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Vacío</span>
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: '#334155' }} />
+                <span className="small text-white-50" style={{ fontSize: '0.625rem' }}>Vacío</span>
               </div>
             </div>
           </div>
@@ -190,14 +200,14 @@ export default function DashboardPage() {
 
       {/* ─── Favorite Exercise ─── */}
       {stats?.favoriteExercise && (
-        <div className="card mb-4" style={{ border: 'none', borderRadius: 16 }}>
+        <div className="card card-dark mb-4" style={{ border: 'none', borderRadius: 16 }}>
           <div className="card-body p-3 d-flex align-items-center gap-3">
-            <div className="d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, borderRadius: 12, background: '#f1f5f9' }}>
-              <Target size={24} style={{ color: '#1e3a5f' }} />
+            <div className="d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(67, 56, 202, 0.15)' }}>
+              <Target size={24} style={{ color: '#a78bfa' }} />
             </div>
             <div>
-              <div className="small fw-medium" style={{ color: '#64748b' }}>Ejercicio favorito</div>
-              <div className="fw-bold" style={{ color: '#1e293b' }}>{stats.favoriteExercise}</div>
+              <div className="small fw-medium text-white-50">Ejercicio favorito</div>
+              <div className="fw-bold text-white">{stats.favoriteExercise}</div>
             </div>
           </div>
         </div>
@@ -235,7 +245,7 @@ export default function DashboardPage() {
           ) : (
             <div className="d-flex align-items-center justify-content-center gap-2 py-2">
               <Moon size={16} style={{ color: '#94a3b8' }} />
-              <span className="small" style={{ color: '#94a3b8' }}>
+              <span className="small text-white-50">
                 Día de descanso registrado
               </span>
             </div>

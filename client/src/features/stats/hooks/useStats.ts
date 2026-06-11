@@ -11,6 +11,8 @@ export function useStats() {
       const res = await api.get<{ data: Stats }>(`/stats/summary?date=${today}`);
       return (res.data.data ?? res.data) as Stats;
     },
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
 }
 
