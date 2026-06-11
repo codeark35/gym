@@ -72,4 +72,18 @@ export function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+/**
+ * Formato corto para gráficos: "9 jun" o "09/06".
+ */
+export function formatDateShort(dateStr: string): string {
+  const normalized = normalizeDateStr(dateStr);
+  const [year, month, day] = normalized.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  return new Intl.DateTimeFormat('es-PY', {
+    timeZone: TIMEZONE,
+    day: 'numeric',
+    month: 'short',
+  }).format(date);
+}
+
 // Backend now expects YYYY-MM-DD directly, no need for local ISO conversion

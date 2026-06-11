@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, ReferenceDot,
 } from 'recharts';
+import { formatDateShort } from '../../../utils/date.utils';
 
 interface ChartPoint {
   date: string;
@@ -52,13 +53,13 @@ const CustomTooltip = ({ active, payload, label, metric }: TooltipProps & { metr
 
 export default function StrengthChart({ data, metric }: StrengthChartProps) {
   const formatted = useMemo(
-    () => data.map((d) => ({ ...d, label: d.date })),
+    () => data.map((d) => ({ ...d, label: formatDateShort(d.date) })),
     [data],
   );
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={formatted} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart data={formatted} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
         <defs>
           <linearGradient id="strengthGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.25} />
@@ -71,11 +72,16 @@ export default function StrengthChart({ data, metric }: StrengthChartProps) {
           tick={{ fontSize: 10, fill: '#64748b' }}
           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
           tickLine={false}
+          interval="preserveStartEnd"
+          angle={-30}
+          textAnchor="end"
+          height={40}
         />
         <YAxis
           tick={{ fontSize: 10, fill: '#64748b' }}
           axisLine={false}
           tickLine={false}
+          width={40}
         />
         <Tooltip content={<CustomTooltip metric={metric} />} />
         <Area

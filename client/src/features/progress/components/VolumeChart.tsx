@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
+import { formatDateShort } from '../../../utils/date.utils';
 
 interface VolumePoint {
   date?: string;
@@ -48,11 +49,17 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   return null;
 };
 
+function formatLabel(d: VolumePoint): string {
+  if (d.date) return formatDateShort(d.date);
+  if (d.week) return d.week;
+  return '';
+}
+
 export default function VolumeChart({ data }: VolumeChartProps) {
   const formatted = useMemo(
     () => data.map((d) => ({
       ...d,
-      label: d.date ?? d.week,
+      label: formatLabel(d),
       totalVolume: Math.round(d.totalVolume),
     })),
     [data],
@@ -64,8 +71,8 @@ export default function VolumeChart({ data }: VolumeChartProps) {
   );
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={formatted} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={formatted} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
         <defs>
           <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.9} />
@@ -78,11 +85,16 @@ export default function VolumeChart({ data }: VolumeChartProps) {
           tick={{ fontSize: 10, fill: '#64748b' }}
           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
           tickLine={false}
+          interval="preserveStartEnd"
+          angle={-30}
+          textAnchor="end"
+          height={40}
         />
         <YAxis
           tick={{ fontSize: 10, fill: '#64748b' }}
           axisLine={false}
           tickLine={false}
+          width={40}
         />
         <Tooltip content={<CustomTooltip />} />
         <Bar dataKey="totalVolume" radius={[6, 6, 0, 0]}>

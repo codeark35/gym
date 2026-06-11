@@ -5,14 +5,15 @@ interface EmptyStateProps {
   title: string;
   description?: string;
   action?: { label: string; onClick: () => void };
+  dark?: boolean;
 }
 
-export default function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
+export default function EmptyState({ icon: Icon, title, description, action, dark = true }: EmptyStateProps) {
   return (
     <div className="text-center py-5 px-3">
-      {Icon && <Icon size={48} className="text-secondary mb-3" />}
-      <h5 className="fw-semibold text-white">{title}</h5>
-      {description && <p className="text-white-50 small">{description}</p>}
+      {Icon && <Icon size={48} className={dark ? 'text-white-50 mb-3' : 'text-secondary mb-3'} />}
+      <h5 className={`fw-semibold ${dark ? 'text-white' : 'text-dark'}`}>{title}</h5>
+      {description && <p className={`small ${dark ? 'text-white-50' : 'text-muted'}`}>{description}</p>}
       {action && (
         <button className="btn btn-primary mt-2" onClick={action.onClick}>
           {action.label}

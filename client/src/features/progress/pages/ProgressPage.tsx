@@ -129,6 +129,7 @@ export default function ProgressPage() {
             <EmptyState
               title="Seleccioná un ejercicio"
               description="Elegí un ejercicio del catálogo para ver tu progreso de fuerza, 1RM y volumen a lo largo del tiempo."
+              dark={false}
             />
           </div>
         </div>
@@ -209,14 +210,20 @@ export default function ProgressPage() {
       {/* Exercise charts */}
       {selectedExercise && (
         <div className="card mb-4" style={{ border: 'none', borderRadius: 16 }}>
-          <div className="card-header p-0" style={{ borderRadius: '16px 16px 0 0' }}>
+          <div className="card-header p-0" style={{ borderRadius: '16px 16px 0 0', background: 'linear-gradient(135deg, #1e293b, #0f172a)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <ul className="nav nav-tabs card-header-tabs">
               {(['strength', '1rm', 'volume'] as const).map((tab) => (
                 <li key={tab} className="nav-item">
                   <button
                     className={`nav-link ${activeTab === tab ? 'active' : ''}`}
                     onClick={() => setActiveTab(tab)}
-                    style={{ fontSize: '0.8125rem' }}
+                    style={{
+                      fontSize: '0.8125rem',
+                      background: activeTab === tab ? 'rgba(67, 56, 202, 0.25)' : 'transparent',
+                      borderColor: activeTab === tab ? 'rgba(67, 56, 202, 0.5)' : 'transparent',
+                      color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.6)',
+                      borderRadius: '8px 8px 0 0',
+                    }}
                   >
                     {tab === 'strength' ? (
                       <span className="d-flex align-items-center gap-1">
@@ -236,11 +243,11 @@ export default function ProgressPage() {
               ))}
             </ul>
           </div>
-          <div className="card-body p-2">
+          <div className="card-body p-3">
             {loadingProgress || (activeTab === '1rm' && loading1RM) ? (
               <LoadingSpinner size="sm" />
             ) : !chartData.length ? (
-              <EmptyState title="Sin datos en este período" description={`No hay registros de ${selectedExercise.nameEs ?? selectedExercise.name} en el rango seleccionado.`} />
+              <EmptyState title="Sin datos en este período" description={`No hay registros de ${selectedExercise.nameEs ?? selectedExercise.name} en el rango seleccionado.`} dark={false} />
             ) : activeTab === 'volume' ? (
               <VolumeChart data={chartData as { date: string; totalVolume: number }[]} />
             ) : (
@@ -255,20 +262,20 @@ export default function ProgressPage() {
 
       {/* Weekly volume */}
       <div className="card" style={{ border: 'none', borderRadius: 16 }}>
-        <div className="card-header fw-semibold py-3 d-flex align-items-center gap-2" style={{ borderRadius: '16px 16px 0 0' }}>
+        <div className="card-header fw-semibold py-3 d-flex align-items-center gap-2" style={{ borderRadius: '16px 16px 0 0', background: 'linear-gradient(135deg, #1e293b, #0f172a)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#fff' }}>
           <div
             className="d-flex align-items-center justify-content-center rounded-circle"
-            style={{ width: 28, height: 28, background: 'rgba(30, 58, 95, 0.1)' }}
+            style={{ width: 28, height: 28, background: 'rgba(56, 189, 248, 0.15)' }}
           >
-            <BarChart3 size={14} style={{ color: '#1e3a5f' }} />
+            <BarChart3 size={14} style={{ color: '#38bdf8' }} />
           </div>
           <span>Volumen semanal (12 semanas)</span>
         </div>
-        <div className="card-body p-2">
+        <div className="card-body p-3">
           {loadingWeekly ? (
             <LoadingSpinner size="sm" />
           ) : !weeklyVolume?.length ? (
-            <EmptyState title="Sin datos" description="Completá workouts para ver tu volumen" />
+            <EmptyState title="Sin datos" description="Completá workouts para ver tu volumen" dark={false} />
           ) : (
             <VolumeChart data={weeklyVolume.map((d) => ({ week: d.week, totalVolume: d.totalVolume }))} />
           )}
