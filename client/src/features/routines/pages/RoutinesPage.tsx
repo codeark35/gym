@@ -237,7 +237,7 @@ export default function RoutinesPage() {
                           {re.exercise.imageUrl ? (
                             <img
                               src={re.exercise.imageUrl}
-                              alt={re.exercise.name}
+                              alt={re.exercise.nameEs ?? re.exercise.name}
                               className="flex-shrink-0"
                               style={{
                                 width: 44,
@@ -259,13 +259,13 @@ export default function RoutinesPage() {
                               }}
                             >
                               <span style={{ color: '#fbbf24', fontSize: '1.25rem', fontWeight: 700 }}>
-                                {re.exercise.name.charAt(0)}
+                                {(re.exercise.nameEs ?? re.exercise.name).charAt(0)}
                               </span>
                             </div>
                           )}
                           <div style={{ minWidth: 0 }}>
                             <div className="fw-bold text-white" style={{ fontSize: '0.9375rem' }}>
-                              {re.exercise.name}
+                              {re.exercise.nameEs ?? re.exercise.name}
                             </div>
                             <span
                               className="badge"

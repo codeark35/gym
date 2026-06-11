@@ -315,7 +315,10 @@ export default function WorkoutLogger() {
         show={showPicker}
         onHide={() => setShowPicker(false)}
         onSelect={(exercise: Exercise) => {
-          if (!selectedExercises.some((e) => e.id === exercise.id)) {
+          const alreadyInSelected = selectedExercises.some((e) => e.id === exercise.id);
+          const alreadyInWorkout = workout?.sets?.some((s) => s.exerciseId === exercise.id);
+
+          if (!alreadyInSelected && !alreadyInWorkout) {
             setSelectedExercises((prev) => [...prev, exercise]);
             setExerciseOrder((prev) => [...prev, exercise.id]);
             setActiveExerciseId(exercise.id);
