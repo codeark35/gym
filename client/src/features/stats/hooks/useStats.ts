@@ -57,6 +57,8 @@ export function useWeeklyActivity() {
       const res = await api.get(`/stats/weekly-activity?date=${today}`);
       return (res.data.data ?? res.data) as { day: string; status: string; intensity: number }[];
     },
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
 }
 

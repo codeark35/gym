@@ -1,61 +1,75 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { parseLocalDate, getTodayInTimezone, dateToLocalString, dateParts, dateFromParts, addDays } from '../common/utils/date.utils';
 
 @Injectable()
 export class StatsService {
+  private readonly logger = new Logger(StatsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
   ) {}
 
   async getSummary(googleId: string, dateStr?: string) {
-    const user = await this.usersService.findByGoogleId(googleId);
-    
-    const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
-    const { year, month, day, dayOfWeek } = dateParts(today);
-    const startOfWeek = dateFromParts(year, month, day - dayOfWeek);
+    try {
+      const user = await this.usersService.findByGoogleId(googleId);
+      
+      const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
+      const { year, month, day, dayOfWeek } = dateParts(today);
+      const startOfWeek = dateFromParts(year, month, day - dayOfWeek);
 
-    const [totalWorkouts, { current: currentStreak, longest: longestStreak }, weekSets, uniqueExercisesResult] =
-      await Promise.all([
-        this.prisma.workout.count({ where: { userId: user.id, status: 'COMPLETED' } }),
-        this.getStreak(googleId, dateStr),
-        this.prisma.set.findMany({
-          where: {
-            workout: { userId: user.id, date: { gte: startOfWeek } },
-            isWarmup: false,
-          },
-          select: { volume: true, exerciseId: true },
-        }),
-        this.prisma.set.groupBy({
-          by: ['exerciseId'],
-          where: { workout: { userId: user.id } },
-          _count: true,
-          orderBy: { _count: { exerciseId: 'desc' } },
-          take: 1,
-        }),
-      ]);
+      const [totalWorkouts, { current: currentStreak, longest: longestStreak }, weekSets, uniqueExercisesResult] =
+        await Promise.all([
+          this.prisma.workout.count({ where: { userId: user.id, status: 'COMPLETED' } }),
+          this.getStreak(googleId, dateStr),
+          this.prisma.set.findMany({
+            where: {
+              workout: { userId: user.id, date: { gte: startOfWeek } },
+              isWarmup: false,
+            },
+            select: { volume: true, exerciseId: true },
+          }),
+          this.prisma.set.groupBy({
+            by: ['exerciseId'],
+            where: { workout: { userId: user.id } },
+            _count: true,
+            orderBy: { _count: { exerciseId: 'desc' } },
+            take: 1,
+          }),
+        ]);
 
-    const weeklyVolumeKg = weekSets.reduce((acc, s) => acc + (s.volume ?? 0), 0);
-    const uniqueExercises = new Set(weekSets.map((s) => s.exerciseId)).size;
+      const weeklyVolumeKg = weekSets.reduce((acc, s) => acc + (s.volume ?? 0), 0);
+      const uniqueExercises = new Set(weekSets.map((s) => s.exerciseId)).size;
 
-    let favoriteExercise: string | undefined;
-    if (uniqueExercisesResult.length > 0) {
-      const ex = await this.prisma.exercise.findUnique({
-        where: { id: uniqueExercisesResult[0].exerciseId },
-      });
-      favoriteExercise = ex?.nameEs ?? ex?.name;
+      let favoriteExercise: string | undefined;
+      if (uniqueExercisesResult.length > 0) {
+        const ex = await this.prisma.exercise.findUnique({
+          where: { id: uniqueExercisesResult[0].exerciseId },
+        });
+        favoriteExercise = ex?.nameEs ?? ex?.name;
+      }
+
+      return {
+        totalWorkouts,
+        currentStreak,
+        longestStreak,
+        weeklyVolumeKg: Math.round(weeklyVolumeKg),
+        uniqueExercises,
+        favoriteExercise,
+      };
+    } catch (error: any) {
+      this.logger.error(`[getSummary] Error for user ${googleId}: ${error.message}`, error.stack);
+      return {
+        totalWorkouts: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        weeklyVolumeKg: 0,
+        uniqueExercises: 0,
+        favoriteExercise: undefined,
+      };
     }
-
-    return {
-      totalWorkouts,
-      currentStreak,
-      longestStreak,
-      weeklyVolumeKg: Math.round(weeklyVolumeKg),
-      uniqueExercises,
-      favoriteExercise,
-    };
   }
 
   async getStreak(googleId: string, dateStr?: string) {
@@ -162,63 +176,70 @@ export class StatsService {
   }
 
   async getWeeklyActivity(googleId: string, dateStr?: string) {
-    const user = await this.usersService.findByGoogleId(googleId);
-    
-    const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
-    
-    // Get start of week (Monday) using UTC-3 parts
-    const { year, month, day, dayOfWeek } = dateParts(today);
-    // dayOfWeek: 0=Sun, 1=Mon... Monday offset = dayOfWeek - 1, but if Sunday we want -6
-    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const startOfWeek = dateFromParts(year, month, day + diff);
-
-    const endOfWeek = addDays(startOfWeek, 6);
-
-    // Get workouts for this week
-    const workouts = await this.prisma.workout.findMany({
-      where: {
-        userId: user.id,
-        date: { gte: startOfWeek, lte: endOfWeek },
-      },
-      select: { date: true, status: true },
-    });
-
-    // Get rest days for this week (table may not exist yet — fallback to empty)
-    let restDays: { date: Date }[] = [];
     try {
-      restDays = await this.prisma.restDay.findMany({
+      const user = await this.usersService.findByGoogleId(googleId);
+      
+      const today = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
+      
+      // Get start of week (Monday) using UTC-3 parts
+      const { year, month, day, dayOfWeek } = dateParts(today);
+      // dayOfWeek: 0=Sun, 1=Mon... Monday offset = dayOfWeek - 1, but if Sunday we want -6
+      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const startOfWeek = dateFromParts(year, month, day + diff);
+
+      const endOfWeek = addDays(startOfWeek, 6);
+
+      // Get workouts for this week
+      const workouts = await this.prisma.workout.findMany({
         where: {
           userId: user.id,
           date: { gte: startOfWeek, lte: endOfWeek },
         },
-        select: { date: true },
+        select: { date: true, status: true },
       });
-    } catch (e: any) {
-      // table rest_days might not exist yet
-    }
 
-    const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-    const activity: { day: string; status: string; intensity: number }[] = [];
-
-    for (let i = 0; i < 7; i++) {
-      const currentDate = addDays(startOfWeek, i);
-      const currentDateStr = dateToLocalString(currentDate);
-      
-      const workout = workouts.find(w => dateToLocalString(w.date) === currentDateStr);
-      const restDay = restDays.find(r => dateToLocalString(r.date) === currentDateStr);
-      
-      if (workout && workout.status === 'COMPLETED') {
-        activity.push({ day: days[i], status: 'completed', intensity: 100 });
-      } else if (workout && workout.status === 'IN_PROGRESS') {
-        activity.push({ day: days[i], status: 'active', intensity: 70 });
-      } else if (restDay) {
-        activity.push({ day: days[i], status: 'rest', intensity: 20 });
-      } else {
-        activity.push({ day: days[i], status: 'empty', intensity: 0 });
+      // Get rest days for this week
+      let restDays: { date: Date }[] = [];
+      try {
+        restDays = await this.prisma.restDay.findMany({
+          where: {
+            userId: user.id,
+            date: { gte: startOfWeek, lte: endOfWeek },
+          },
+          select: { date: true },
+        });
+      } catch (e: any) {
+        // table rest_days might not exist yet
       }
-    }
 
-    return activity;
+      const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+      const activity: { day: string; status: string; intensity: number }[] = [];
+
+      for (let i = 0; i < 7; i++) {
+        const currentDate = addDays(startOfWeek, i);
+        const currentDateStr = dateToLocalString(currentDate);
+        
+        const workout = workouts.find(w => dateToLocalString(w.date) === currentDateStr);
+        const restDay = restDays.find(r => dateToLocalString(r.date) === currentDateStr);
+        
+        if (workout && workout.status === 'COMPLETED') {
+          activity.push({ day: days[i], status: 'completed', intensity: 100 });
+        } else if (workout && workout.status === 'IN_PROGRESS') {
+          activity.push({ day: days[i], status: 'active', intensity: 70 });
+        } else if (restDay) {
+          activity.push({ day: days[i], status: 'rest', intensity: 20 });
+        } else {
+          activity.push({ day: days[i], status: 'empty', intensity: 0 });
+        }
+      }
+
+      return activity;
+    } catch (error: any) {
+      this.logger.error(`[getWeeklyActivity] Error for user ${googleId}: ${error.message}`, error.stack);
+      // Return empty week as fallback
+      const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+      return days.map(day => ({ day, status: 'empty', intensity: 0 }));
+    }
   }
 
   async getTodayRestDay(googleId: string, dateStr?: string) {

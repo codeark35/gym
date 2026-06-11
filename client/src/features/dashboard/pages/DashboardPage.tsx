@@ -10,15 +10,26 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data: stats, isLoading: loadingStats, error: statsError } = useStats();
   const { data: todayWorkout } = useTodayWorkout();
   const { data: todayWorkouts } = useWorkoutsForDate(todayISO());
-  const { data: weeklyActivity } = useWeeklyActivity();
+  const { data: weeklyActivity, isLoading: loadingWeeklyActivity, error: weeklyActivityError } = useWeeklyActivity();
   const { data: todayRestDay } = useTodayRestDay();
   const registerRestDay = useRegisterRestDay();
+
+  useEffect(() => {
+    if (statsError) {
+      console.error('[Dashboard] Stats error:', statsError);
+    }
+    if (weeklyActivityError) {
+      console.error('[Dashboard] Weekly activity error:', weeklyActivityError);
+    }
+    console.log('[Dashboard] Stats:', stats, 'WeeklyActivity:', weeklyActivity);
+  }, [stats, statsError, weeklyActivity, weeklyActivityError]);
 
   const completedCount = todayWorkouts?.filter((w) => w.status === 'COMPLETED').length ?? 0;
   const hasRestDayToday = !!todayRestDay;
@@ -141,11 +152,18 @@ export default function DashboardPage() {
       )}
 
       {/* ─── Weekly Activity ─── */}
-      {loadingStats ? (
+      {loadingStats || loadingWeeklyActivity ? (
         <div className="d-flex justify-content-center py-3 mb-4">
           <LoadingSpinner size="sm" />
         </div>
-      ) : statsError ? null : (
+      ) : statsError || weeklyActivityError ? (
+        <div className="card mb-4" style={{ border: 'none', borderRadius: 16, background: 'linear-gradient(135deg, #1e293b, #0f172a)' }}>
+          <div className="card-body p-3 d-flex align-items-center gap-2">
+            <AlertCircle size={18} style={{ color: '#ef4444' }} />
+            <span className="text-white-50 small">Error cargando actividad semanal</span>
+          </div>
+        </div>
+      ) : (
         <div className="card card-dark mb-4" style={{ border: 'none', borderRadius: 16 }}>
           <div className="card-body p-3">
             <div className="d-flex align-items-center justify-content-between mb-3">
