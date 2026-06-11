@@ -52,7 +52,7 @@ export default function DashboardPage() {
             <div style={{ width: 6, height: 3, borderRadius: 2, background: '#2d6a4f' }} />
           </div>
         </div>
-        <div
+        {/* <div
           className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
           style={{
             width: 48, height: 48, fontSize: '1.25rem',
@@ -61,7 +61,7 @@ export default function DashboardPage() {
           }}
         >
           {user?.name?.[0]?.toUpperCase() ?? <User size={24} />}
-        </div>
+        </div> */}
       </div>
 
       {/* ─── Status Card ─── */}
