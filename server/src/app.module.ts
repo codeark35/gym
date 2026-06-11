@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -13,6 +13,7 @@ import { StatsModule } from './stats/stats.module';
 import { AiModule } from './ai/ai.module';
 import { RoutinesModule } from './routines/routines.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SeedService } from './common/seed.service';
 
 @Module({
   imports: [
@@ -38,5 +39,12 @@ import { NotificationsModule } from './notifications/notifications.module';
     RoutinesModule,
     NotificationsModule,
   ],
+  providers: [SeedService],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  constructor(private readonly seedService: SeedService) {}
+
+  async onModuleInit() {
+    // SeedService auto-runs on its own onModuleInit
+  }
+}
