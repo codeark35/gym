@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Offcanvas } from 'react-bootstrap';
 import { useExercises } from '../hooks/useExercises';
+import { normalizeSearchText } from '../../../utils/string.utils';
 import type { Exercise, MuscleGroup } from '../../../types/workout.types';
 import { MUSCLE_GROUP_LABELS } from '../../../types/workout.types';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
@@ -19,11 +20,13 @@ export default function ExercisePicker({ show, onHide, onSelect }: ExercisePicke
   const [query, setQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState<MuscleGroup | null>(null);
 
+  const normalizedQuery = normalizeSearchText(query);
+
   const filtered = exercises.filter((ex) => {
     const matchesQuery =
       !query ||
-      ex.name.toLowerCase().includes(query.toLowerCase()) ||
-      (ex.nameEs ?? '').toLowerCase().includes(query.toLowerCase());
+      normalizeSearchText(ex.name).includes(normalizedQuery) ||
+      normalizeSearchText(ex.nameEs ?? '').includes(normalizedQuery);
     const matchesGroup = !activeGroup || ex.muscleGroup === activeGroup;
     return matchesQuery && matchesGroup;
   });

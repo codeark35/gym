@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppShell from '../../../components/layout/AppShell';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import {
@@ -12,15 +12,43 @@ export default function SettingsPage() {
   const { data: settings, isLoading } = useNotificationSettings();
   const updateSettings = useUpdateNotificationSettings();
   const [saved, setSaved] = useState(false);
+  const [localSettings, setLocalSettings] = useState<NotificationSettings | null>(null);
+
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings(settings);
+    }
+  }, [settings]);
+
+  const getSettingValue = (key: keyof NotificationSettings) => localSettings?.[key] ?? settings?.[key] ?? true;
 
   const handleToggle = (key: keyof NotificationSettings) => {
-    if (!settings) return;
-    updateSettings.mutate({ [key]: !settings[key] }, {
-      onSuccess: () => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      },
+    const currentValue = getSettingValue(key);
+    const updatedValue = !currentValue;
+
+    setLocalSettings((prevSettings) => {
+      const sourceSettings = prevSettings ?? settings;
+      if (!sourceSettings) return prevSettings;
+      return {
+        ...sourceSettings,
+        [key]: updatedValue,
+      };
     });
+
+    updateSettings.mutate(
+      { [key]: updatedValue },
+      {
+        onSuccess: () => {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+        },
+        onError: () => {
+          if (settings) {
+            setLocalSettings(settings);
+          }
+        },
+      },
+    );
   };
 
   const items: { key: keyof NotificationSettings; icon: typeof Brain; iconColor: string; title: string; description: string }[] = [
@@ -80,13 +108,14 @@ export default function SettingsPage() {
           ) : (
             <>
               {items.map((item) => {
-                const enabled = settings?.[item.key] ?? true;
+                const enabled = getSettingValue(item.key);
                 const Icon = item.icon;
                 return (
                   <div
                     key={item.key}
                     className="d-flex align-items-center gap-3 p-3"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                    onClick={() => handleToggle(item.key)}
                   >
                     <div
                       className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
@@ -98,12 +127,21 @@ export default function SettingsPage() {
                       <div className="fw-semibold text-white small">{item.title}</div>
                       <div className="text-white-50" style={{ fontSize: '0.75rem' }}>{item.description}</div>
                     </div>
-                    <div className="form-check form-switch">
+                    <div className="form-check form-switch m-0">
                       <input
+                        id={`notification-${item.key}`}
                         className="form-check-input"
                         type="checkbox"
                         checked={enabled}
+                        onClick={(event) => event.stopPropagation()}
                         onChange={() => handleToggle(item.key)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      <label
+                        className="form-check-label"
+                        htmlFor={`notification-${item.key}`}
+                        aria-label={item.title}
+                        onClick={(event) => event.stopPropagation()}
                         style={{ cursor: 'pointer' }}
                       />
                     </div>

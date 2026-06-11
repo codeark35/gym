@@ -25,7 +25,7 @@ CREATE TYPE "SubscriptionPlan" AS ENUM ('FREE', 'PRO', 'GYM');
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
-    "externalId" TEXT NOT NULL,
+    "googleId" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "avatarUrl" TEXT,
@@ -128,7 +128,7 @@ CREATE TABLE "subscriptions" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_externalId_key" ON "users"("externalId");
+CREATE UNIQUE INDEX "users_googleId_key" ON "users"("googleId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");

@@ -7,7 +7,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="min-vh-100" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
       <TopBar />
       <main className="app-content">
-        <div className="container-fluid py-3 px-3" style={{ maxWidth: 680 }}>
+        <div className="container-fluid py-3 px-2" style={{ maxWidth: 680, width: '100%' }}>
           {children}
         </div>
       </main>

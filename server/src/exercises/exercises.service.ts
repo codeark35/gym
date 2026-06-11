@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Exercise } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UsersService } from '../users/users.service';
@@ -16,7 +17,7 @@ export class ExercisesService {
       where: {
         OR: [{ isGlobal: true }, { userId: user.id }],
       },
-      orderBy: [{ muscleGroup: 'asc' }, { name: 'asc' }],
+      orderBy: [{ nameEs: 'asc' }, { name: 'asc' }],
     });
     
     // Log for debugging duplicates
@@ -32,17 +33,21 @@ export class ExercisesService {
 
   async search(googleId: string, q: string) {
     const user = await this.usersService.findByGoogleId(googleId);
-    return this.prisma.exercise.findMany({
-      where: {
-        OR: [{ isGlobal: true }, { userId: user.id }],
-        AND: {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { nameEs: { contains: q, mode: 'insensitive' } },
-          ],
-        },
-      },
-    });
+
+    const normalizedQuery = `%${q
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()}%`;
+
+    return this.prisma.$queryRaw<Exercise[]>`
+      SELECT *
+      FROM "exercises"
+      WHERE ("isGlobal" = true OR "userId" = ${user.id})
+        AND (
+          translate(lower("name"), 'áéíóúàèìòùäëïöüâêîôûñç', 'aeiouaeiouaeiouaeiounc') LIKE ${normalizedQuery}
+          OR translate(lower("nameEs"), 'áéíóúàèìòùäëïöüâêîôûñç', 'aeiouaeiouaeiouaeiounc') LIKE ${normalizedQuery}
+        );
+    `;
   }
 
   async create(googleId: string, dto: CreateExerciseDto) {

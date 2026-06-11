@@ -201,14 +201,14 @@ export default function AIPage() {
   return (
     <AppShell>
       {/* Header */}
-      <div className="d-flex align-items-center justify-content-between mb-3">
+      <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 mb-3">
         <div className="d-flex align-items-center gap-2">
           <div style={{ width: 4, height: 20, background: 'linear-gradient(to bottom, #4338ca, #1e3a5f)', borderRadius: 2 }} />
           <h5 className="fw-bold text-white mb-0">Chat IA</h5>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
           <button
-            className="btn btn-sm d-flex align-items-center gap-1"
+            className="btn btn-sm d-flex align-items-center gap-1 flex-fill flex-sm-none"
             onClick={() => setShowSidebar(!showSidebar)}
             style={{
               borderRadius: 10,
@@ -222,7 +222,7 @@ export default function AIPage() {
             Chats
           </button>
           <button
-            className="btn btn-sm d-flex align-items-center gap-1"
+            className="btn btn-sm d-flex align-items-center gap-1 flex-fill flex-sm-none"
             onClick={startNewChat}
             style={{
               borderRadius: 10,
@@ -339,7 +339,8 @@ export default function AIPage() {
           border: 'none',
           borderRadius: 16,
           background: '#1e293b',
-          minHeight: activeConv ? 360 : 120,
+          minHeight: activeConv ? 320 : 120,
+          maxHeight: activeConv ? 'calc(100vh - 260px)' : undefined,
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -372,9 +373,8 @@ export default function AIPage() {
         ) : (
           <>
             {/* Messages */}
-            <div className="card-body p-3" style={{ flexGrow: 1, overflow: 'auto', maxHeight: 400 }}>
+            <div className="card-body p-3" style={{ flexGrow: 1, overflow: 'auto', minHeight: 200, maxHeight: activeConv ? 'calc(100vh - 340px)' : 200 }}>
               {/* Chat title */}
-              <div className="text-center mb-3">
                 <span className="small fw-medium text-white-50">{activeConv.title}</span>
               </div>
 
@@ -446,10 +446,10 @@ export default function AIPage() {
 
             {/* Input */}
             <div className="card-footer p-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderRadius: '0 0 16px 16px' }}>
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 flex-column flex-sm-row">
                 <input
                   type="text"
-                  className="form-control bg-transparent border-0 text-white"
+                  className="form-control bg-transparent border-0 text-white flex-fill"
                   placeholder="Escribí un mensaje..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}

@@ -18,7 +18,7 @@ export function useSearchExercises(q: string) {
   return useQuery({
     queryKey: ['exercises', 'search', q],
     queryFn: async () => {
-      const res = await api.get<{ data: Exercise[] }>(`/exercises/search?q=${q}`);
+      const res = await api.get<{ data: Exercise[] }>(`/exercises/search?q=${encodeURIComponent(q)}`);
       return (res.data.data ?? res.data) as Exercise[];
     },
     enabled: q.length > 0,

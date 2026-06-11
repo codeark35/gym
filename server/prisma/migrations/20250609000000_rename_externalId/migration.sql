@@ -1,20 +1,30 @@
 -- Rename externalId to googleId in users table
 -- This migration fixes the column name for Firebase Auth integration
 
--- Drop existing unique index on externalId if exists
-DROP INDEX IF EXISTS "users_externalId_key";
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'users_externalid_key'
+  ) THEN
+    DROP INDEX "users_externalId_key";
+  END IF;
+EXCEPTION WHEN undefined_table THEN
+  NULL;
+END $$;
 
--- Rename column
-ALTER TABLE "users" RENAME COLUMN "externalId" TO "googleId";
+DO $$ BEGIN
+  ALTER TABLE "users" RENAME COLUMN "externalId" TO "googleId";
+EXCEPTION WHEN undefined_column THEN
+  NULL;
+END $$;
 
--- Add unique index on googleId
-CREATE UNIQUE INDEX "users_googleId_key" ON "users"("googleId");
+DO $$ BEGIN
+  CREATE UNIQUE INDEX IF NOT EXISTS "users_googleId_key" ON "users"("googleId");
+EXCEPTION WHEN undefined_table THEN
+  NULL;
+END $$;
 
--- Drop subscriptionId column if exists (subscriptions are removed)
 ALTER TABLE "users" DROP COLUMN IF EXISTS "subscriptionId";
 
--- Drop subscriptions table if exists
 DROP TABLE IF EXISTS "subscriptions";
 
--- Drop SubscriptionPlan enum if exists
 DROP TYPE IF EXISTS "SubscriptionPlan";
