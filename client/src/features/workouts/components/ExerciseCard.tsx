@@ -4,7 +4,7 @@ import { MUSCLE_GROUP_LABELS } from '../../../types/workout.types';
 
 import { useAddSet } from '../hooks/useWorkouts';
 import SetRow from './SetRow';
-import { Plus, Timer, Minus, ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
+import { Plus, Timer, Minus, ChevronDown, Maximize2, Minimize2, Trash2 } from 'lucide-react';
 
 interface ExerciseCardProps {
   exerciseId: string;
@@ -13,6 +13,7 @@ interface ExerciseCardProps {
   workoutId: string;
   isExpanded: boolean;
   onToggle: () => void;
+  onRemove?: () => void;
 }
 
 // Muscle group color mapping
@@ -71,7 +72,7 @@ function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void })
   );
 }
 
-export default function ExerciseCard({ exerciseId, exercise, sets, workoutId, isExpanded, onToggle }: ExerciseCardProps) {
+export default function ExerciseCard({ exerciseId, exercise, sets, workoutId, isExpanded, onToggle, onRemove }: ExerciseCardProps) {
   const addSet = useAddSet();
   const [weight, setWeight] = useState(sets.length ? sets[sets.length - 1].weightKg : 0);
   const [reps, setReps] = useState(sets.length ? sets[sets.length - 1].reps : 10);
@@ -178,6 +179,25 @@ export default function ExerciseCard({ exerciseId, exercise, sets, workoutId, is
           >
             {!isExpanded ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
           </button>
+
+          {sets.length === 0 && onRemove && (
+            <button
+              className="btn btn-sm d-flex align-items-center justify-content-center"
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              style={{
+                borderRadius: 8,
+                background: 'rgba(248, 113, 113, 0.12)',
+                border: `1px solid rgba(248, 113, 113, 0.3)`,
+                color: '#dc2626',
+                width: 32,
+                height: 32,
+                padding: 0,
+              }}
+              aria-label="Quitar ejercicio"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
 
           {/* Rest time selector */}
           {isExpanded && (

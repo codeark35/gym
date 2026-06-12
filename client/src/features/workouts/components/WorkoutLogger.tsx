@@ -38,6 +38,12 @@ export default function WorkoutLogger() {
   const [activeExerciseId, setActiveExerciseId] = useState<string | null>(null);
   const [exerciseOrder, setExerciseOrder] = useState<string[]>([]);
 
+  const removeSelectedExercise = (exerciseId: string) => {
+    setSelectedExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
+    setExerciseOrder((prev) => prev.filter((id) => id !== exerciseId));
+    setActiveExerciseId((prev) => (prev === exerciseId ? null : prev));
+  };
+
   // Reset local state when workout changes (new session)
   useEffect(() => {
     if (workout?.id) {
@@ -260,6 +266,7 @@ export default function WorkoutLogger() {
             workoutId={workout.id}
             isExpanded={activeExerciseId === exId}
             onToggle={() => setActiveExerciseId((prev) => prev === exId ? null : exId)}
+            onRemove={entry.sets.length === 0 ? () => removeSelectedExercise(exId) : undefined}
           />
         );
       })}
