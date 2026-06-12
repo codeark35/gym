@@ -111,25 +111,25 @@ export default function NotificationsPage() {
                       <Icon size={18} style={{ color }} />
                     </div>
                     <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                      <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 mb-1">
-                        <span className="badge" style={{ background: `${color}20`, color, fontSize: '0.65rem', border: `1px solid ${color}40` }}>
+                      <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 mb-1" style={{ flexWrap: 'wrap' }}>
+                        <span className="badge" style={{ background: `${color}20`, color, fontSize: '0.65rem', border: `1px solid ${color}40`, wordBreak: 'break-word' }}>
                           {getTypeLabel(n.type)}
                         </span>
-                        <span className="text-white-50" style={{ fontSize: '0.75rem' }}>
+                        <span className="text-white-50" style={{ fontSize: '0.75rem', wordBreak: 'break-word' }}>
                           {new Date(n.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                         </span>
                       </div>
-                      <div className="fw-semibold text-white small mb-1">{n.title}</div>
-                      <p className="text-white-50 mb-0" style={{ fontSize: '0.8125rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      <div className="fw-semibold text-white small mb-1" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{n.title}</div>
+                      <p className="text-white-50 mb-0" style={{ fontSize: '0.8125rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                         {n.message}
                       </p>
                     </div>
                   </div>
 
-                  <div className="d-flex flex-wrap justify-content-end gap-2 mt-3">
+                  <div className="d-flex flex-column flex-sm-row flex-wrap justify-content-end gap-2 mt-3">
                     {isUnread && (
                       <button
-                        className="btn btn-sm"
+                        className="btn btn-sm w-100 w-sm-auto"
                         style={{ fontSize: '0.75rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', border: 'none' }}
                         onClick={() => markAsRead.mutate(n.id)}
                       >
@@ -137,14 +137,14 @@ export default function NotificationsPage() {
                       </button>
                     )}
                     <button
-                      className="btn btn-sm"
+                      className="btn btn-sm w-100 w-sm-auto"
                       style={{ fontSize: '0.75rem', color: '#a78bfa', background: 'rgba(167, 139, 250, 0.1)', border: 'none' }}
                       onClick={() => navigate('/ai', { state: { notification: { id: n.id, type: n.type, title: n.title, message: n.message } } })}
                     >
                       Ver en IA
                     </button>
                     <button
-                      className="btn btn-sm"
+                      className="btn btn-sm w-100 w-sm-auto"
                       style={{ fontSize: '0.75rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none' }}
                       onClick={() => deleteNotification.mutate(n.id)}
                     >

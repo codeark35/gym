@@ -268,6 +268,7 @@ export const exercises = [
   { name: 'Nordic Curl', nameEs: 'Curl nórdico', muscleGroup: MuscleGroup.LEGS, equipment: Equipment.BODYWEIGHT, movementType: MovementType.ISOLATION, imageUrl: EXERCISE_IMAGE_URLS['Leg Curl'] },
 
   // SHOULDERS
+  { name: 'Overhead Barbell Press', nameEs: 'Press militar con barra', muscleGroup: MuscleGroup.SHOULDERS, equipment: Equipment.BARBELL, movementType: MovementType.PUSH, imageUrl: EXERCISE_IMAGE_URLS['Overhead Barbell Press'] },
   { name: 'Standing Barbell Overhead Press', nameEs: 'Press militar de pie con barra', muscleGroup: MuscleGroup.SHOULDERS, equipment: Equipment.BARBELL, movementType: MovementType.PUSH, imageUrl: EXERCISE_IMAGE_URLS['Overhead Barbell Press'] },
   { name: 'Seated Dumbbell Overhead Press', nameEs: 'Press de hombros sentado con mancuernas', muscleGroup: MuscleGroup.SHOULDERS, equipment: Equipment.DUMBBELL, movementType: MovementType.PUSH, imageUrl: EXERCISE_IMAGE_URLS['Dumbbell Press'] },
   { name: 'Arnold Press', nameEs: 'Press Arnold', muscleGroup: MuscleGroup.SHOULDERS, equipment: Equipment.DUMBBELL, movementType: MovementType.PUSH, imageUrl: EXERCISE_IMAGE_URLS['Arnold Press'] },

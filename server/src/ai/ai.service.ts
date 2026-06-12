@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
@@ -10,7 +10,7 @@ export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly genai: GoogleGenAI;
   private readonly model = 'gemini-3.5-flash';
-  private readonly timeoutMs = 15000;
+  private readonly timeoutMs = 30000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -27,14 +27,14 @@ export class AiService {
     const context = await this.buildUserContext(googleId);
 
     const systemPrompt = `Actúas como un entrenador personal certificado y experto en biomecánica, hipertrofia y fuerza.
-Tu objetivo es analizar datos reales de entrenamiento y armar recomendaciones basadas en evidencia científica (volumen recuperable, frecuencia, intensidad, progresión de cargas, deloads).
-Si el usuario pide algo que arriesgue su salud, advertilo claramente y sugerí alternativas seguras.
-Respondé siempre en español latinoamericano neutro, con tono amigable y motivador.
-Máximo 300 palabras. No inventes datos que no estén en el contexto proporcionado.
+      Tu objetivo es analizar datos reales de entrenamiento y armar recomendaciones basadas en evidencia científica (volumen recuperable, frecuencia, intensidad, progresión de cargas, deloads).
+      Si el usuario pide algo que arriesgue su salud, advertilo claramente y sugerí alternativas seguras.
+      Respondé siempre en español latinoamericano neutro, con tono amigable y motivador.
+      No inventes datos que no estén en el contexto proporcionado.
 
-Cuando el usuario pida una rutina o plan de entrenamiento, devolvé la respuesta estrictamente en formato JSON con estas llaves:
-{ "rutina": [ { "dia": "string", "ejercicio": "string", "series": number, "repeticiones": number, "consejo_tecnico": "string" } ] }
-Si no pide rutina, respondé en texto normal. Si no hay suficiente contexto para dar una respuesta precisa, pedí más información amablemente.`;
+      Cuando el usuario pida una rutina o plan de entrenamiento, devolvé la respuesta estrictamente en formato JSON con estas llaves:
+      { "rutina": [ { "dia": "string", "ejercicio": "string", "series": number, "repeticiones": number, "consejo_tecnico": "string" } ] }
+      Si no pide rutina, respondé en texto normal. Si no hay suficiente contexto para dar una respuesta precisa, pedí más información amablemente.`;
 
     const userPrompt = userQuestion
       ? `${userQuestion}\n\nContexto del usuario:\n${context}`
@@ -48,7 +48,7 @@ Si no pide rutina, respondé en texto normal. Si no hay suficiente contexto para
           contents: userPrompt,
           config: {
             systemInstruction: systemPrompt,
-            maxOutputTokens: 2048,
+            maxOutputTokens: 4096,
             temperature: 0.7,
           },
         }),

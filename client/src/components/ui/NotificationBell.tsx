@@ -63,13 +63,15 @@ export default function NotificationBell() {
             className="position-absolute end-0 mt-2"
             style={{
               width: 'min(100vw - 24px, 320px)',
-              maxHeight: 'min(75vh, 400px)',
+              maxWidth: '100vw',
+              maxHeight: 'min(75vh, 420px)',
               zIndex: 1050,
               background: 'linear-gradient(135deg, #0f172a, #1e293b)',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 16,
               boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
               overflow: 'hidden',
+              boxSizing: 'border-box',
             }}
           >
             <div className="d-flex align-items-center justify-content-between p-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -109,9 +111,9 @@ export default function NotificationBell() {
                     }}
                   >
                     <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{getTypeIcon(n.type)}</span>
-                    <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                      <div className="d-flex align-items-center gap-2">
-                        <span className="fw-semibold text-white small" style={{ fontSize: '0.8125rem' }}>{n.title}</span>
+                    <div className="flex-grow-1" style={{ minWidth: 0, width: '100%' }}>
+                      <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2" style={{ flexWrap: 'wrap' }}>
+                        <span className="fw-semibold text-white small" style={{ fontSize: '0.8125rem', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{n.title}</span>
                         {!n.readAt && (
                           <span
                             className="rounded-circle flex-shrink-0"
@@ -119,7 +121,7 @@ export default function NotificationBell() {
                           />
                         )}
                       </div>
-                      <p className="text-white-50 mb-0" style={{ fontSize: '0.75rem', lineHeight: 1.4 }}>
+                      <p className="text-white-50 mb-0" style={{ fontSize: '0.75rem', lineHeight: 1.4, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                         {n.message.slice(0, 80)}{n.message.length > 80 ? '...' : ''}
                       </p>
                     </div>
