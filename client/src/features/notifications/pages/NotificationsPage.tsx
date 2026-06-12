@@ -50,14 +50,14 @@ export default function NotificationsPage() {
   return (
     <AppShell>
       <div className="mb-4">
-        <div className="d-flex align-items-center justify-content-between mb-2">
+        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 mb-2">
           <div className="d-flex align-items-center gap-2">
             <div style={{ width: 4, height: 20, background: 'linear-gradient(to bottom, #4338ca, #1e3a5f)', borderRadius: 2 }} />
             <h5 className="fw-bold text-white mb-0">Notificaciones</h5>
           </div>
           {notifications && notifications.some(n => !n.readAt) && (
             <button
-              className="btn btn-sm btn-outline-secondary"
+              className="btn btn-sm btn-outline-secondary w-100 w-sm-auto"
               style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem' }}
               onClick={() => markAllAsRead.mutate()}
             >
@@ -103,7 +103,7 @@ export default function NotificationsPage() {
                 }}
               >
                 <div className="card-body p-3">
-                  <div className="d-flex align-items-start gap-3">
+                  <div className="d-flex flex-column flex-md-row align-items-start gap-3">
                     <div
                       className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
                       style={{ width: 40, height: 40, background: `${color}15`, border: `1px solid ${color}30` }}
@@ -111,22 +111,22 @@ export default function NotificationsPage() {
                       <Icon size={18} style={{ color }} />
                     </div>
                     <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                      <div className="d-flex align-items-center gap-2 mb-1">
+                      <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 mb-1">
                         <span className="badge" style={{ background: `${color}20`, color, fontSize: '0.65rem', border: `1px solid ${color}40` }}>
                           {getTypeLabel(n.type)}
                         </span>
-                        <span className="text-white-50" style={{ fontSize: '0.7rem' }}>
+                        <span className="text-white-50" style={{ fontSize: '0.75rem' }}>
                           {new Date(n.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                         </span>
                       </div>
                       <div className="fw-semibold text-white small mb-1">{n.title}</div>
-                      <p className="text-white-50 mb-0" style={{ fontSize: '0.8125rem', lineHeight: 1.5 }}>
+                      <p className="text-white-50 mb-0" style={{ fontSize: '0.8125rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                         {n.message}
                       </p>
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-end gap-2 mt-3">
+                  <div className="d-flex flex-wrap justify-content-end gap-2 mt-3">
                     {isUnread && (
                       <button
                         className="btn btn-sm"
@@ -136,15 +136,13 @@ export default function NotificationsPage() {
                         Marcar leída
                       </button>
                     )}
-                    {(n.type === 'SUGGESTION' || n.type === 'ROUTINE') && (
-                      <button
-                        className="btn btn-sm"
-                        style={{ fontSize: '0.75rem', color: '#a78bfa', background: 'rgba(167, 139, 250, 0.1)', border: 'none' }}
-                        onClick={() => navigate('/ai')}
-                      >
-                        Ver en IA
-                      </button>
-                    )}
+                    <button
+                      className="btn btn-sm"
+                      style={{ fontSize: '0.75rem', color: '#a78bfa', background: 'rgba(167, 139, 250, 0.1)', border: 'none' }}
+                      onClick={() => navigate('/ai', { state: { notification: { id: n.id, type: n.type, title: n.title, message: n.message } } })}
+                    >
+                      Ver en IA
+                    </button>
                     <button
                       className="btn btn-sm"
                       style={{ fontSize: '0.75rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none' }}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import AppShell from '../../../components/layout/AppShell';
 import api from '../../../api/axios';
 import {
@@ -29,6 +30,7 @@ interface Conversation {
 
 type Action =
   | { type: 'NEW_CHAT' }
+  | { type: 'NEW_CHAT_WITH_ID'; id: string; title: string; message: Message }
   | { type: 'SELECT_CHAT'; id: string }
   | { type: 'DELETE_CHAT'; id: string }
   | { type: 'ADD_MESSAGE'; id: string; message: Message }
@@ -65,6 +67,18 @@ function chatReducer(state: { conversations: Conversation[]; activeId: string | 
             ? { ...c, messages: [...c.messages, action.message] }
             : c,
         ),
+      };
+    }
+    case 'NEW_CHAT_WITH_ID': {
+      if (state.conversations.some((conv) => conv.id === action.id)) {
+        return { ...state, activeId: action.id };
+      }
+      return {
+        conversations: [
+          { id: action.id, title: action.title, messages: [action.message] },
+          ...state.conversations,
+        ],
+        activeId: action.id,
       };
     }
     case 'SET_TITLE': {
@@ -108,9 +122,37 @@ export default function AIPage() {
   const [state, dispatch] = usePersistedReducer();
   const [chatInput, setChatInput] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
+  const notificationHandledRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const notificationState = location.state?.notification as {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+  } | undefined;
 
   const activeConv = state.conversations.find((c) => c.id === state.activeId) ?? null;
+
+  useEffect(() => {
+    if (!notificationState || notificationHandledRef.current) return;
+
+    const chatId = `notification-${notificationState.id || createId()}`;
+    const message = { role: 'user' as const, content: notificationState.message };
+
+    if (!state.conversations.some((conv) => conv.id === chatId)) {
+      dispatch({
+        type: 'NEW_CHAT_WITH_ID',
+        id: chatId,
+        title: notificationState.title,
+        message,
+      });
+    } else {
+      dispatch({ type: 'SELECT_CHAT', id: chatId });
+    }
+
+    notificationHandledRef.current = true;
+  }, [notificationState, state.conversations, dispatch]);
 
   const sendToAI = useMutation({
     mutationFn: async ({ message, type }: { message?: string; type?: AnalysisType }) => {

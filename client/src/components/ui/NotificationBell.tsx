@@ -62,8 +62,8 @@ export default function NotificationBell() {
           <div
             className="position-absolute end-0 mt-2"
             style={{
-              width: 320,
-              maxHeight: 400,
+              width: 'min(100vw - 24px, 320px)',
+              maxHeight: 'min(75vh, 400px)',
               zIndex: 1050,
               background: 'linear-gradient(135deg, #0f172a, #1e293b)',
               border: '1px solid rgba(255,255,255,0.1)',
@@ -87,7 +87,7 @@ export default function NotificationBell() {
               </div>
             </div>
 
-            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+            <div style={{ maxHeight: 'min(60vh, 320px)', overflowY: 'auto' }}>
               {recentNotifications.length === 0 ? (
                 <div className="p-4 text-center text-white-50 small">
                   Sin notificaciones
@@ -104,9 +104,7 @@ export default function NotificationBell() {
                     }}
                     onClick={() => {
                       if (!n.readAt) markAsRead.mutate(n.id);
-                      if (n.type === 'ROUTINE' || n.type === 'SUGGESTION') {
-                        navigate('/ai');
-                      }
+                      navigate('/ai', { state: { notification: { id: n.id, type: n.type, title: n.title, message: n.message } } });
                       setShow(false);
                     }}
                   >
