@@ -200,8 +200,9 @@ export default function AIPage() {
 
   return (
     <AppShell>
-      {/* Header */}
-      <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 mb-3">
+      <div className="d-flex flex-column" style={{ minHeight: 'calc(100vh - 160px)' }}>
+        {/* Header */}
+        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 mb-3">
         <div className="d-flex align-items-center gap-2">
           <div style={{ width: 4, height: 20, background: 'linear-gradient(to bottom, #4338ca, #1e3a5f)', borderRadius: 2 }} />
           <h5 className="fw-bold text-white mb-0">Chat IA</h5>
@@ -334,15 +335,16 @@ export default function AIPage() {
 
       {/* Chat area */}
       <div
-        className="card mb-3"
+        className="card mb-3 flex-grow-1"
         style={{
           border: 'none',
           borderRadius: 16,
           background: '#1e293b',
-          minHeight: activeConv ? 320 : 120,
-          maxHeight: activeConv ? 'calc(100vh - 260px)' : undefined,
+          minHeight: activeConv ? 'calc(100vh - 240px)' : 120,
+          height: activeConv ? 'calc(100vh - 240px)' : undefined,
           display: 'flex',
           flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
         {!activeConv ? (
@@ -375,8 +377,7 @@ export default function AIPage() {
             {/* Messages */}
             <div className="card-body p-3" style={{ flexGrow: 1, overflow: 'auto', minHeight: 200, maxHeight: activeConv ? 'calc(100vh - 340px)' : 200 }}>
               {/* Chat title */}
-                <span className="small fw-medium text-white-50">{activeConv.title}</span>
-              </div>
+              <span className="small fw-medium text-white-50">{activeConv.title}</span>
 
               {activeConv.messages.length === 0 ? (
                 <p className="text-white-50 small text-center py-4">Escribí tu primer mensaje</p>
@@ -477,6 +478,7 @@ export default function AIPage() {
           </>
         )}
       </div>
+    </div>
     </AppShell>
   );
 }

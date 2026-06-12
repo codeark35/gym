@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -33,6 +34,42 @@ export class AiNotificationsService {
     }
 
     this.logger.log('Análisis de usuarios completado.');
+  }
+
+  @OnEvent('set.pr')
+  async handlePrEvent(payload: { setId: string; userId: string }) {
+    const { setId, userId } = payload;
+    const profile = await this.prisma.userProfile.findUnique({
+      where: { userId },
+      select: { enablePRNotifications: true },
+    });
+
+    if (!profile?.enablePRNotifications) return;
+
+    const set = await this.prisma.set.findUnique({
+      where: { id: setId },
+      include: { exercise: true },
+    });
+    if (!set || set.isWarmup) return;
+
+    const existing = await this.prisma.notification.findFirst({
+      where: {
+        userId,
+        type: NotificationType.PR,
+        data: { path: ['setId'], equals: setId },
+      },
+    });
+
+    if (existing) return;
+
+    await this.notificationsService.create(
+      userId,
+      NotificationType.PR,
+      'Nuevo record personal!',
+      `${set.exercise.nameEs ?? set.exercise.name}: ${set.weightKg}kg x ${set.reps} reps (1RM estimado: ${set.oneRepMax?.toFixed(1)}kg)`,
+      { setId: set.id, exerciseId: set.exerciseId, weightKg: set.weightKg, reps: set.reps },
+    );
+    this.logger.log(`[PR] Notificación creada para usuario ${userId} (set ${setId})`);
   }
 
   private async analyzeUser(googleId: string, userId: string, profile: any) {
