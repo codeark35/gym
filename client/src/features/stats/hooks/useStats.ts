@@ -3,6 +3,13 @@ import api from '../../../api/axios';
 import type { Stats } from '../../../types/workout.types';
 import { todayISO } from '../../../utils/date.utils';
 
+type ApiResponse<T> = T | { data: T };
+
+function unwrapApi<T>(res: { data: any }): T | null {
+  if (res.data === null) return null;
+  return res.data?.data === undefined ? res.data : res.data.data;
+}
+
 export function useStats() {
   const today = todayISO();
   return useQuery({
@@ -54,8 +61,8 @@ export function useWeeklyActivity() {
   return useQuery({
     queryKey: ['stats', 'weekly-activity', today],
     queryFn: async () => {
-      const res = await api.get(`/stats/weekly-activity?date=${today}`);
-      return (res.data.data ?? res.data) as { day: string; status: string; intensity: number }[];
+      const res = await api.get<ApiResponse<{ day: string; status: string; intensity: number }[]>>(`/stats/weekly-activity?date=${today}`);
+      return unwrapApi(res) as { day: string; status: string; intensity: number }[];
     },
     staleTime: 5 * 60 * 1000,
     retry: 2,
@@ -67,8 +74,8 @@ export function useTodayRestDay() {
   return useQuery({
     queryKey: ['stats', 'rest-day', today],
     queryFn: async () => {
-      const res = await api.get(`/stats/rest-day?date=${today}`);
-      return res.data.data ?? res.data;
+      const res = await api.get<ApiResponse<null>>(`/stats/rest-day?date=${today}`);
+      return unwrapApi(res);
     },
   });
 }

@@ -3,14 +3,14 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import EmptyState from '../../../components/ui/EmptyState';
 import { useStats, useWeeklyActivity, useRegisterRestDay, useTodayRestDay } from '../../stats/hooks/useStats';
 import { useTodayWorkout, useWorkoutsForDate } from '../../workouts/hooks/useWorkouts';
-import { todayISO } from '../../../utils/date.utils';
+import { todayISO, formatDateFull } from '../../../utils/date.utils';
 import {
   Dumbbell, TrendingUp, ArrowRight, Flame, CheckCircle2,
   CircleDot, Play, Zap, Target, CalendarDays, Moon, AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -20,6 +20,9 @@ export default function DashboardPage() {
   const { data: weeklyActivity, isLoading: loadingWeeklyActivity, error: weeklyActivityError } = useWeeklyActivity();
   const { data: todayRestDay } = useTodayRestDay();
   const registerRestDay = useRegisterRestDay();
+  const [showManualDate, setShowManualDate] = useState(false);
+  const [manualDate, setManualDate] = useState(todayISO());
+  const [manualMessage, setManualMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (statsError) {
@@ -44,7 +47,18 @@ export default function DashboardPage() {
 
   const handleRestDay = () => {
     const today = todayISO();
-    registerRestDay.mutate(today);
+    registerRestDay.mutate(today, {
+      onSuccess: () => setManualMessage('Día de descanso registrado para hoy'),
+    });
+  };
+
+  const handleManualRestDay = () => {
+    registerRestDay.mutate(manualDate, {
+      onSuccess: () => {
+        setManualMessage(`Día de descanso registrado para ${formatDateFull(manualDate)}`);
+        setShowManualDate(false);
+      },
+    });
   };
 
   return (
@@ -95,6 +109,22 @@ export default function DashboardPage() {
                 <div className="fw-bold">{completedCount} entrenamiento{completedCount > 1 ? 's' : ''} completado{completedCount > 1 ? 's' : ''}</div>
                 <div className="small text-white-50">Buen trabajo hoy</div>
               </div>
+            </div>
+          </div>
+        ) : hasRestDayToday ? (
+          <div className="card-body p-0 position-relative">
+            <div className="position-absolute" style={{ top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'radial-gradient(circle, rgba(100, 116, 139, 0.2) 0%, transparent 70%)' }} />
+            <div className="d-flex align-items-center p-3 position-relative" style={{ background: 'linear-gradient(135deg, #475569 0%, #64748b 100%)' }}>
+              <div className="d-flex align-items-center justify-content-center rounded-circle me-3" style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.15)' }}>
+                <Moon size={24} className="text-white" />
+              </div>
+              <div className="text-white">
+                <div className="fw-bold">Día de descanso</div>
+                <div className="small text-white-50">Hoy descansás y recuperás energía</div>
+              </div>
+              <Link to="/workout" className="btn btn-sm btn-light ms-auto fw-semibold" style={{ borderRadius: 10, fontSize: '0.8125rem' }}>
+                Ver calendario
+              </Link>
             </div>
           </div>
         ) : (
@@ -252,20 +282,64 @@ export default function DashboardPage() {
       {!hasActiveWorkout && completedCount === 0 && (
         <div>
           {!hasRestDayToday ? (
-            <button 
-              onClick={handleRestDay}
-              className="btn btn-outline-info w-100 btn-action d-flex align-items-center justify-content-center"
-              disabled={registerRestDay.isPending}
-            >
-              <Moon size={18} className="me-2" />
-              {registerRestDay.isPending ? 'Registrando...' : 'Registrar día de descanso'}
-            </button>
+            <>
+              <button 
+                onClick={handleRestDay}
+                className="btn btn-outline-info w-100 btn-action d-flex align-items-center justify-content-center mb-2"
+                disabled={registerRestDay.isPending}
+              >
+                <Moon size={18} className="me-2" />
+                {registerRestDay.isPending ? 'Registrando...' : 'Registrar día de descanso'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary w-100 btn-action d-flex align-items-center justify-content-center"
+                onClick={() => setShowManualDate((prev) => !prev)}
+              >
+                <CalendarDays size={18} className="me-2" />
+                Registrar descanso para otra fecha
+              </button>
+              {showManualDate && (
+                <div className="card card-dark mt-3 p-3" style={{ borderRadius: 14 }}>
+                  <label className="form-label text-white-50 mb-2">Selecciona fecha</label>
+                  <input
+                    type="date"
+                    value={manualDate}
+                    onChange={(event) => setManualDate(event.target.value)}
+                    className="form-control bg-dark text-white border-0"
+                    style={{ minHeight: 48 }}
+                  />
+                  <div className="d-flex gap-2 mt-3">
+                    <button
+                      type="button"
+                      className="btn btn-success flex-fill"
+                      onClick={handleManualRestDay}
+                      disabled={registerRestDay.isPending}
+                    >
+                      Guardar descanso
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-light flex-fill"
+                      onClick={() => setShowManualDate(false)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="d-flex align-items-center justify-content-center gap-2 py-2">
               <Moon size={16} style={{ color: '#94a3b8' }} />
               <span className="small text-white-50">
                 Día de descanso registrado
               </span>
+            </div>
+          )}
+          {manualMessage && (
+            <div className="alert alert-success rounded-3 mt-3 mb-0 py-2 px-3">
+              {manualMessage}
             </div>
           )}
         </div>

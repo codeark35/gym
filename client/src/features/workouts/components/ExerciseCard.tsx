@@ -72,7 +72,17 @@ function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void })
   );
 }
 
-export default function ExerciseCard({ exerciseId, exercise, sets, workoutId, isExpanded, onToggle, onRemove }: ExerciseCardProps) {
+export default function ExerciseCard(props: ExerciseCardProps) {
+  const {
+    exerciseId,
+    exercise,
+    sets,
+    workoutId,
+    isExpanded,
+    onToggle,
+    onRemove,
+  } = props;
+
   const addSet = useAddSet();
   const [weight, setWeight] = useState(sets.length ? sets[sets.length - 1].weightKg : 0);
   const [reps, setReps] = useState(sets.length ? sets[sets.length - 1].reps : 10);

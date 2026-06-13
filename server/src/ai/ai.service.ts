@@ -10,7 +10,9 @@ export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly genai: GoogleGenAI;
   private readonly model = 'gemini-3.5-flash';
-  private readonly timeoutMs = 30000;
+  private readonly timeoutMs = 120000;
+  private readonly maxOutputTokens = 8192;
+  private readonly retryAttempts = 3;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -20,7 +22,13 @@ export class AiService {
     if (!apiKey) {
       this.logger.warn('GEMINI_API_KEY no configurada. El módulo IA no funcionará.');
     }
-    this.genai = new GoogleGenAI({ apiKey: apiKey ?? '' });
+    this.genai = new GoogleGenAI({
+      apiKey: apiKey ?? '',
+      httpOptions: {
+        timeout: this.timeoutMs,
+        retryOptions: { attempts: this.retryAttempts },
+      },
+    });
   }
 
   async analyze(googleId: string, type: AnalysisType, userQuestion?: string): Promise<string> {
@@ -31,6 +39,8 @@ export class AiService {
       Si el usuario pide algo que arriesgue su salud, advertilo claramente y sugerí alternativas seguras.
       Respondé siempre en español latinoamericano neutro, con tono amigable y motivador.
       No inventes datos que no estén en el contexto proporcionado.
+      Priorizá una respuesta completa y sin cortes; si el análisis requiere más texto para ser útil, generá una explicación clara y desarrollada.
+      No limites artificialmente la longitud de la respuesta cuando el contexto es suficiente.
 
       Cuando el usuario pida una rutina o plan de entrenamiento, devolvé la respuesta estrictamente en formato JSON con estas llaves:
       { "rutina": [ { "dia": "string", "ejercicio": "string", "series": number, "repeticiones": number, "consejo_tecnico": "string" } ] }
@@ -40,17 +50,23 @@ export class AiService {
       ? `${userQuestion}\n\nContexto del usuario:\n${context}`
       : this.buildPromptByType(type, context);
 
+    const aiConfig = {
+      systemInstruction: systemPrompt,
+      maxOutputTokens: this.maxOutputTokens,
+      temperature: 0.7,
+      httpOptions: {
+        timeout: this.timeoutMs,
+        retryOptions: { attempts: this.retryAttempts },
+      },
+    };
+
     try {
       const start = Date.now();
       const response = await this.withTimeout(
         this.genai.models.generateContent({
           model: this.model,
           contents: userPrompt,
-          config: {
-            systemInstruction: systemPrompt,
-            maxOutputTokens: 4096,
-            temperature: 0.7,
-          },
+          config: aiConfig,
         }),
         this.timeoutMs,
       );
@@ -60,16 +76,50 @@ export class AiService {
       this.logger.log(`[AI] type=${type} user=${googleId} elapsed=${elapsed}ms chars=${text.length}`);
 
       return text;
-    } catch (err) {
-      this.logger.error(`[AI] Error generando contenido: ${err.message}`, err.stack);
-      if (err.message?.includes('quota') || err.message?.includes('rate limit')) {
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      const message = err.message.toLowerCase();
+      this.logger.warn(`[AI] Fallback a stream por error: ${err.message}`);
+
+      if (message.includes('quota') || message.includes('rate limit')) {
         throw new ServiceUnavailableException('Cuota de IA excedida. Intentá más tarde.');
       }
-      if (err.message?.includes('timeout')) {
+      if (message.includes('timeout')) {
         throw new ServiceUnavailableException('El servicio de IA está tardando demasiado. Intentá de nuevo.');
       }
+
+      if (message.includes('premature close') || message.includes('stream') || message.includes('connection reset') || message.includes('ecoonreset')) {
+        try {
+          const streamText = await this.withTimeout(
+            this.generateContentStream(userPrompt, aiConfig),
+            this.timeoutMs,
+          );
+          this.logger.log(`[AI] type=${type} user=${googleId} stream-fallback chars=${streamText.length}`);
+          return streamText;
+        } catch (streamError) {
+          const streamErr = streamError instanceof Error ? streamError : new Error(String(streamError));
+          this.logger.error(`[AI] Stream fallback falló: ${streamErr.message}`, streamErr.stack);
+        }
+      }
+
       throw new ServiceUnavailableException('Error al contactar el servicio de IA. Intentá más tarde.');
     }
+  }
+
+  private async generateContentStream(userPrompt: string, config: Record<string, any>): Promise<string> {
+    const stream = await this.genai.models.generateContentStream({
+      model: this.model,
+      contents: userPrompt,
+      config,
+    });
+
+    let text = '';
+    for await (const chunk of stream) {
+      if (chunk && typeof chunk.text === 'string') {
+        text += chunk.text;
+      }
+    }
+    return text;
   }
 
   async chat(googleId: string, message: string): Promise<string> {

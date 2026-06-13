@@ -41,6 +41,27 @@ function createId() {
   return `chat-${Date.now()}-${nextId++}`;
 }
 
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderAiMarkdown(text: string) {
+  const escaped = escapeHtml(text);
+  const formatted = escaped
+    .replace(/^###\s+(.*)$/gm, '<div style="font-size:0.95rem; font-weight:700; margin:0.5rem 0 0.25rem;">$1</div>')
+    .replace(/^##\s+(.*)$/gm, '<div style="font-size:1rem; font-weight:700; margin:0.6rem 0 0.3rem;">$1</div>')
+    .replace(/^#\s+(.*)$/gm, '<div style="font-size:1.1rem; font-weight:700; margin:0.7rem 0 0.35rem;">$1</div>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br/>');
+  return formatted;
+}
+
 function chatReducer(state: { conversations: Conversation[]; activeId: string | null }, action: Action) {
   switch (action.type) {
     case 'NEW_CHAT': {
@@ -249,7 +270,7 @@ export default function AIPage() {
           <div style={{ width: 4, height: 20, background: 'linear-gradient(to bottom, #4338ca, #1e3a5f)', borderRadius: 2 }} />
           <h5 className="fw-bold text-white mb-0">Chat IA</h5>
         </div>
-        <div className="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
+        <div className="d-flex flex-wrap flex-sm-row gap-2 w-100 w-sm-auto">
           <button
             className="btn btn-sm d-flex align-items-center gap-1 flex-fill flex-sm-none"
             onClick={() => setShowSidebar(!showSidebar)}
@@ -450,9 +471,8 @@ export default function AIPage() {
                         whiteSpace: 'pre-wrap',
                         wordBreak: 'break-word',
                       }}
-                    >
-                      {msg.content}
-                    </div>
+                      dangerouslySetInnerHTML={{ __html: msg.role === 'ai' ? renderAiMarkdown(msg.content) : escapeHtml(msg.content) }}
+                    />
                     {msg.role === 'user' && (
                       <div
                         className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 ms-2"

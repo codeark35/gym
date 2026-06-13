@@ -17,9 +17,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor: handle 401
+// Response interceptor: unwrap Nest transform wrapper and handle 401
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const payload = response.data;
+    return {
+      ...response,
+      data: payload?.data === undefined ? payload : payload.data,
+    };
+  },
   async (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('access_token');
