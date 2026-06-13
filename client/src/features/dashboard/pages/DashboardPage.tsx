@@ -122,9 +122,7 @@ export default function DashboardPage() {
                 <div className="fw-bold">Día de descanso</div>
                 <div className="small text-white-50">Hoy descansás y recuperás energía</div>
               </div>
-              <Link to="/workout" className="btn btn-sm btn-light ms-auto fw-semibold" style={{ borderRadius: 10, fontSize: '0.8125rem' }}>
-                Ver calendario
-              </Link>
+              
             </div>
           </div>
         ) : (
