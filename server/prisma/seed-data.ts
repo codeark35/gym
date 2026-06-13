@@ -266,6 +266,8 @@ export const exercises = [
   { name: 'Cable Glute Kickback', nameEs: 'Patada de glúteo en polea', muscleGroup: MuscleGroup.GLUTES, equipment: Equipment.CABLE, movementType: MovementType.ISOLATION, imageUrl: EXERCISE_IMAGE_URLS['Cable Kickback'] },
   { name: 'Step Up', nameEs: 'Subidas al cajón', muscleGroup: MuscleGroup.LEGS, equipment: Equipment.DUMBBELL, movementType: MovementType.SQUAT, imageUrl: EXERCISE_IMAGE_URLS['Step Up'] },
   { name: 'Nordic Curl', nameEs: 'Curl nórdico', muscleGroup: MuscleGroup.LEGS, equipment: Equipment.BODYWEIGHT, movementType: MovementType.ISOLATION, imageUrl: EXERCISE_IMAGE_URLS['Leg Curl'] },
+  { name: 'Femoral Curl', nameEs: 'Curl femoral acostado', muscleGroup: MuscleGroup.LEGS, equipment: Equipment.BODYWEIGHT, movementType: MovementType.ISOLATION, imageUrl: EXERCISE_IMAGE_URLS['Leg Curl'] },
+  { name: 'Femoral Curl', nameEs: 'Curl femoral en máquina', muscleGroup: MuscleGroup.LEGS, equipment: Equipment.MACHINE, movementType: MovementType.ISOLATION, imageUrl: EXERCISE_IMAGE_URLS['Leg Curl'] },
 
   // SHOULDERS
   { name: 'Overhead Barbell Press', nameEs: 'Press militar con barra', muscleGroup: MuscleGroup.SHOULDERS, equipment: Equipment.BARBELL, movementType: MovementType.PUSH, imageUrl: EXERCISE_IMAGE_URLS['Overhead Barbell Press'] },
