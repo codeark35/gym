@@ -311,7 +311,8 @@ export default function WorkoutLogger() {
               const ok = await confirm({
                 title: 'Cancelar entrenamiento',
                 message: '¿Cancelar este entrenamiento? No se guardará nada.',
-                confirmLabel: 'Cancelar entrenamiento',
+                confirmLabel: 'Sí, cancelar',
+                cancelLabel: 'Seguir entrenando',
                 variant: 'danger',
               });
               if (ok) cancelWorkout();
