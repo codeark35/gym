@@ -3,6 +3,7 @@ import AppShell from '../../../components/layout/AppShell';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import EmptyState from '../../../components/ui/EmptyState';
 import { useWorkouts, useDeleteWorkout } from '../hooks/useWorkouts';
+import { useConfirm } from '../../../hooks/useConfirm';
 import { formatDateFull } from '../../../utils/date.utils';
 import { formatVolume } from '../../../utils/volume.utils';
 import {
@@ -12,6 +13,7 @@ import {
 import { Link } from 'react-router-dom';
 
 export default function WorkoutsHistoryPage() {
+  const { confirm, dialog } = useConfirm();
   const [page, setPage] = useState(1);
   const { data, isLoading } = useWorkouts(page);
   const deleteWorkout = useDeleteWorkout();
@@ -143,10 +145,15 @@ export default function WorkoutsHistoryPage() {
                         </span>
                         <button
                           className="btn btn-sm p-1 d-flex align-items-center justify-content-center"
-                          onClick={() => {
-                            if (confirm('¿Eliminar este entrenamiento?')) {
-                              deleteWorkout.mutate(w.id);
-                            }
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: 'Eliminar entrenamiento',
+                              message: '¿Eliminar este entrenamiento?',
+                              confirmLabel: 'Eliminar',
+                              variant: 'danger',
+                            });
+                            if (!ok) return;
+                            deleteWorkout.mutate(w.id);
                           }}
                           disabled={deleteWorkout.isPending}
                           title="Eliminar"
@@ -226,6 +233,7 @@ export default function WorkoutsHistoryPage() {
           ← Volver al inicio
         </Link>
       </div>
+      {dialog}
     </AppShell>
   );
 }

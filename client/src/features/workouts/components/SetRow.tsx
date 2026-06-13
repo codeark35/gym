@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { WorkoutSet } from '../../../types/workout.types';
 import { useUpdateSet, useDeleteSet } from '../hooks/useWorkouts';
 import PRBadge from '../../../components/ui/PRBadge';
+import { useConfirm } from '../../../hooks/useConfirm';
 import { Trash2, Check, Minus, Plus } from 'lucide-react';
 
 interface SetRowProps {
@@ -12,6 +13,7 @@ interface SetRowProps {
 }
 
 export default function SetRow({ set, workoutId, index, onCompleted }: SetRowProps) {
+  const { confirm, dialog } = useConfirm();
   const updateSet = useUpdateSet();
   const deleteSet = useDeleteSet();
   const [reps, setReps] = useState(set.reps);
@@ -27,19 +29,24 @@ export default function SetRow({ set, workoutId, index, onCompleted }: SetRowPro
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     setError('');
-    if (confirm('¿Eliminar esta serie?')) {
-      deleteSet.mutate(
-        { workoutId, setId: set.id },
-        {
-          onError: (err: any) => {
-            const msg = err?.response?.data?.message ?? err?.message ?? 'Error al eliminar la serie';
-            setError(msg);
-          },
+    const ok = await confirm({
+      title: 'Eliminar serie',
+      message: '¿Eliminar esta serie?',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    deleteSet.mutate(
+      { workoutId, setId: set.id },
+      {
+        onError: (err: any) => {
+          const msg = err?.response?.data?.message ?? err?.message ?? 'Error al eliminar la serie';
+          setError(msg);
         },
-      );
-    }
+      },
+    );
   };
 
   const adjustWeight = (delta: number) => {
@@ -198,6 +205,7 @@ export default function SetRow({ set, workoutId, index, onCompleted }: SetRowPro
           <span className="badge text-white small" style={{ background: '#991b1b' }}>{error}</span>
         )}
       </div>
+      {dialog}
     </div>
   );
 }

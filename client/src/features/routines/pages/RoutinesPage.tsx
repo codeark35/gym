@@ -9,6 +9,7 @@ import {
   useDeleteRoutine,
   useToggleRoutine,
 } from '../hooks/useRoutines';
+import { useConfirm } from '../../../hooks/useConfirm';
 import { MUSCLE_GROUP_LABELS, type MuscleGroup } from '../../../types/workout.types';
 import type { Routine } from '../../../types/routine.types';
 import {
@@ -18,6 +19,7 @@ import ExercisePicker from '../../exercises/components/ExercisePicker';
 import type { Exercise } from '../../../types/workout.types';
 
 export default function RoutinesPage() {
+  const { confirm, dialog } = useConfirm();
   const [page] = useState(1);
   const { data, isLoading } = useRoutines(page, 50);
   const createRoutine = useCreateRoutine();
@@ -534,10 +536,15 @@ export default function RoutinesPage() {
                     </button>
                     <button
                       className="btn btn-sm p-1 d-flex align-items-center justify-content-center"
-                      onClick={() => {
-                        if (confirm('¿Eliminar esta rutina?')) {
-                          deleteRoutine.mutate(routine.id);
-                        }
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: 'Eliminar rutina',
+                          message: '¿Eliminar esta rutina?',
+                          confirmLabel: 'Eliminar',
+                          variant: 'danger',
+                        });
+                        if (!ok) return;
+                        deleteRoutine.mutate(routine.id);
                       }}
                       disabled={deleteRoutine.isPending}
                       title="Eliminar"
@@ -590,6 +597,7 @@ export default function RoutinesPage() {
           setShowExercisePicker(false);
         }}
       />
+      {dialog}
     </AppShell>
   );
 }

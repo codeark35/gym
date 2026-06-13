@@ -7,6 +7,7 @@ import ExercisePicker from '../../exercises/components/ExercisePicker';
 import WorkoutSummary from './WorkoutSummary';
 import RoutinePicker from '../../routines/components/RoutinePicker';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { useConfirm } from '../../../hooks/useConfirm';
 import { formatDateFull, todayISO } from '../../../utils/date.utils';
 import { totalVolume, formatVolume } from '../../../utils/volume.utils';
 import { useState, useEffect } from 'react';
@@ -16,6 +17,7 @@ import {
 
 export default function WorkoutLogger() {
   const navigate = useNavigate();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const {
     selectedDate,
     activeWorkout: workout,
@@ -305,7 +307,15 @@ export default function WorkoutLogger() {
         <div className="mt-2">
           <button
             className="btn btn-outline-danger w-100 btn-action"
-            onClick={cancelWorkout}
+            onClick={async () => {
+              const ok = await confirm({
+                title: 'Cancelar entrenamiento',
+                message: '¿Cancelar este entrenamiento? No se guardará nada.',
+                confirmLabel: 'Cancelar entrenamiento',
+                variant: 'danger',
+              });
+              if (ok) cancelWorkout();
+            }}
           >
             Cancelar entrenamiento
           </button>
@@ -333,6 +343,7 @@ export default function WorkoutLogger() {
           setShowPicker(false);
         }}
       />
+      {confirmDialog}
     </div>
   );
 }

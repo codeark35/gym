@@ -194,7 +194,6 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
       setError('No hay entrenamiento activo');
       return;
     }
-    if (!confirm('Cancelar este entrenamiento? No se guardar nada.')) return;
 
     setError(null);
     try {
