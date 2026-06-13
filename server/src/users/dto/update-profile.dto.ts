@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsNumber, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber, IsDateString, IsArray } from 'class-validator';
 import { FitnessGoal, ExperienceLevel, WeightUnit } from '@prisma/client';
 
 export class UpdateProfileDto {
@@ -25,4 +25,9 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsEnum(WeightUnit)
   preferredUnit?: WeightUnit;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  restDaysOfWeek?: number[];
 }

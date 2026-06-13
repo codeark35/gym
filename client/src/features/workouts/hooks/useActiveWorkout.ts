@@ -4,6 +4,19 @@ import api from '../../../api/axios';
 import type { Workout } from '../../../types/workout.types';
 import { todayISO } from '../../../utils/date.utils';
 
+const STORAGE_KEY = 'gymtracker_active_workout_id';
+
+function loadStoredId(): string | null {
+  try { return sessionStorage.getItem(STORAGE_KEY); } catch { return null; }
+}
+
+function saveStoredId(id: string | null) {
+  try {
+    if (id) sessionStorage.setItem(STORAGE_KEY, id);
+    else sessionStorage.removeItem(STORAGE_KEY);
+  } catch { /* noop */ }
+}
+
 interface WorkoutSessionState {
   selectedDate: string;
   activeWorkout: Workout | null;
@@ -26,79 +39,88 @@ interface UseActiveWorkoutReturn extends WorkoutSessionState {
   isCancelling: boolean;
 }
 
-/**
- * Hook empresarial para gestionar sesiones de entrenamiento.
- * 
- * Arquitectura:
- * - Mantiene el workout activo en estado local para evitar re-renders problemáticos
- * - Usa queries de React Query solo para carga inicial, no para estado activo
- * - Todas las operaciones (crear, finalizar, cancelar) actualizan el estado local inmediatamente
- * - El backend se sincroniza en background sin afectar la UX
- */
 export function useActiveWorkout(): UseActiveWorkoutReturn {
   const qc = useQueryClient();
   const [selectedDate, setSelectedDateState] = useState(todayISO());
   const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
   const [lastCompletedWorkout, setLastCompletedWorkout] = useState<Workout | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [storedWorkoutId, setStoredWorkoutId] = useState<string | null>(() => loadStoredId());
 
-  // Query para cargar el workout de la fecha seleccionada
-  // Solo se usa para carga inicial; luego el estado local es la fuente de verdad
-  const { isLoading: isLoadingQuery, data: queryWorkout } = useQuery<Workout | null>({
+  // By-ID query — preferred, NOT invalidated by set mutations
+  const byIdQuery = useQuery<Workout | null>({
+    queryKey: ['workout', 'by-id', storedWorkoutId],
+    queryFn: async () => {
+      if (!storedWorkoutId) return null;
+      const res = await api.get<{ data: Workout }>(`/workouts/${storedWorkoutId}`);
+      return (res.data.data ?? res.data) as unknown as Workout;
+    },
+    enabled: !!storedWorkoutId,
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+  // Date-based query — fallback when no stored ID
+  const dateQuery = useQuery<Workout | null>({
     queryKey: ['workout', 'active', selectedDate],
     queryFn: async () => {
       if (selectedDate === todayISO()) {
         const res = await api.get<{ data: Workout | null }>(`/workouts/today?date=${selectedDate}`);
         return res.data.data ?? null;
-      } else {
-        const res = await api.get<{ data: Workout[] }>(`/workouts/date/${selectedDate}`);
-        const workouts = res.data.data ?? [];
-        return workouts.find((w: Workout) => w.status === 'IN_PROGRESS') ?? null;
       }
+      const res = await api.get<{ data: Workout[] }>(`/workouts/date/${selectedDate}`);
+      const workouts = res.data.data ?? [];
+      return workouts.find((w: Workout) => w.status === 'IN_PROGRESS') ?? null;
     },
+    enabled: !storedWorkoutId,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    placeholderData: (previousData) => previousData,
+    placeholderData: (prev: Workout | null | undefined) => prev,
   });
 
-  // Sincronizar query result con estado local
+  const queryWorkout = storedWorkoutId ? byIdQuery.data : dateQuery.data;
+  const isLoadingQuery = storedWorkoutId ? byIdQuery.isLoading : dateQuery.isLoading;
+
+  // Sync query result to local state; clear stored ID if workout gone
   useEffect(() => {
     if (queryWorkout !== undefined) {
       setActiveWorkout(queryWorkout);
+      if (!queryWorkout && storedWorkoutId) {
+        setStoredWorkoutId(null);
+        saveStoredId(null);
+      }
     }
-  }, [queryWorkout]);
+  }, [queryWorkout, storedWorkoutId]);
 
-  // isLoading solo es true si estamos cargando Y no tenemos workout aún
+  // isLoading only true if loading AND no workout yet
   const isLoading = isLoadingQuery && activeWorkout === null;
 
-  // Crear workout
+  // ─── Mutations ───────────────────────────────────────────
+
   const createMutation = useMutation({
     mutationFn: async (data: { date: string }) => {
       const res = await api.post<{ data: Workout }>('/workouts', data);
-      return res.data.data ?? res.data;
+      return (res.data.data ?? res.data) as unknown as Workout;
     },
   });
 
-  // Crear workout desde rutina
   const createFromRoutineMutation = useMutation({
     mutationFn: async (data: { routineId: string; date: string }) => {
       const res = await api.post<{ data: Workout }>(
         `/workouts/from-routine/${data.routineId}`,
         { date: data.date },
       );
-      return res.data.data ?? res.data;
+      return (res.data.data ?? res.data) as unknown as Workout;
     },
   });
 
-  // Finalizar workout
   const finishMutation = useMutation({
     mutationFn: async ({ id }: { id: string }) => {
       const res = await api.patch<{ data: Workout }>(`/workouts/${id}`, { status: 'COMPLETED' });
-      return res.data.data ?? res.data;
+      return (res.data.data ?? res.data) as unknown as Workout;
     },
   });
 
-  // Cancelar workout
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/workouts/${id}`);
@@ -106,10 +128,14 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
     },
   });
 
+  // ─── Actions ─────────────────────────────────────────────
+
   const setSelectedDate = useCallback((date: string) => {
     setSelectedDateState(date);
     setActiveWorkout(null);
     setError(null);
+    setStoredWorkoutId(null);
+    saveStoredId(null);
   }, []);
 
   const startWorkout = useCallback(async () => {
@@ -117,7 +143,8 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
     try {
       const workout = await createMutation.mutateAsync({ date: selectedDate });
       setActiveWorkout(workout);
-      // Actualizar cache en background
+      setStoredWorkoutId(workout.id);
+      saveStoredId(workout.id);
       qc.setQueryData(['workout', 'active', selectedDate], workout);
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Error al crear el entrenamiento';
@@ -129,11 +156,10 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
   const startWorkoutFromRoutine = useCallback(async (routineId: string) => {
     setError(null);
     try {
-      const workout = await createFromRoutineMutation.mutateAsync({
-        routineId,
-        date: selectedDate,
-      });
+      const workout = await createFromRoutineMutation.mutateAsync({ routineId, date: selectedDate });
       setActiveWorkout(workout);
+      setStoredWorkoutId(workout.id);
+      saveStoredId(workout.id);
       qc.setQueryData(['workout', 'active', selectedDate], workout);
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Error al iniciar rutina';
@@ -152,6 +178,8 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
       const workout = await finishMutation.mutateAsync({ id: activeWorkout.id });
       setActiveWorkout(workout);
       setLastCompletedWorkout(workout);
+      setStoredWorkoutId(null);
+      saveStoredId(null);
       qc.setQueryData(['workout', 'active', selectedDate], workout);
       qc.invalidateQueries({ queryKey: ['workouts'] });
     } catch (err: any) {
@@ -166,12 +194,14 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
       setError('No hay entrenamiento activo');
       return;
     }
-    if (!confirm('¿Cancelar este entrenamiento? No se guardará nada.')) return;
-    
+    if (!confirm('Cancelar este entrenamiento? No se guardar nada.')) return;
+
     setError(null);
     try {
       await cancelMutation.mutateAsync(activeWorkout.id);
       setActiveWorkout(null);
+      setStoredWorkoutId(null);
+      saveStoredId(null);
       qc.setQueryData(['workout', 'active', selectedDate], null);
       qc.invalidateQueries({ queryKey: ['workouts'] });
     } catch (err: any) {
@@ -182,12 +212,18 @@ export function useActiveWorkout(): UseActiveWorkoutReturn {
   }, [activeWorkout, cancelMutation, qc, selectedDate]);
 
   const refreshWorkout = useCallback(() => {
-    qc.invalidateQueries({ queryKey: ['workout', 'active', selectedDate] });
-  }, [qc, selectedDate]);
+    if (storedWorkoutId) {
+      qc.invalidateQueries({ queryKey: ['workout', 'by-id', storedWorkoutId] });
+    } else {
+      qc.invalidateQueries({ queryKey: ['workout', 'active', selectedDate] });
+    }
+  }, [qc, selectedDate, storedWorkoutId]);
 
   const resetWorkout = useCallback(() => {
     setActiveWorkout(null);
     setError(null);
+    setStoredWorkoutId(null);
+    saveStoredId(null);
     qc.invalidateQueries({ queryKey: ['workout', 'active', selectedDate] });
   }, [qc, selectedDate]);
 

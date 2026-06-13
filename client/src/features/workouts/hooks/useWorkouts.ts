@@ -112,8 +112,8 @@ export function useAddSet() {
       return res.data.data ?? res.data;
     },
     onSuccess: () => {
-      // Invalidar todas las queries de workout activo para que useActiveWorkout se refetche
       qc.invalidateQueries({ queryKey: ['workout', 'active'] });
+      qc.invalidateQueries({ queryKey: ['workout', 'by-id'] });
       qc.invalidateQueries({ queryKey: ['workout', 'today'] });
       qc.invalidateQueries({ queryKey: ['workouts'] });
     },
@@ -137,6 +137,7 @@ export function useUpdateSet() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout', 'active'] });
+      qc.invalidateQueries({ queryKey: ['workout', 'by-id'] });
       qc.invalidateQueries({ queryKey: ['workouts'] });
     },
   });
@@ -151,6 +152,7 @@ export function useDeleteSet() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout', 'active'] });
+      qc.invalidateQueries({ queryKey: ['workout', 'by-id'] });
       qc.invalidateQueries({ queryKey: ['workout', 'today'] });
       qc.invalidateQueries({ queryKey: ['workouts'] });
     },

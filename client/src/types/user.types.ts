@@ -16,4 +16,5 @@ export interface UserProfile {
   fitnessGoal: string;
   experienceLevel: string;
   preferredUnit: 'KG' | 'LB';
+  restDaysOfWeek?: number[];
 }

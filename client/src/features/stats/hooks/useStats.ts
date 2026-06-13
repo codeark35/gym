@@ -101,3 +101,63 @@ export function useRegisterRestDay() {
     },
   });
 }
+
+export function useRegisterRestDaysBulk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (dates: string[]) => {
+      const res = await api.post('/stats/rest-days/bulk', { dates });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats', 'rest-day'] });
+      queryClient.invalidateQueries({ queryKey: ['stats', 'weekly-activity'] });
+      queryClient.invalidateQueries({ queryKey: ['stats', 'summary'] });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats', 'rest-day'] });
+      queryClient.invalidateQueries({ queryKey: ['stats', 'weekly-activity'] });
+    },
+  });
+}
+
+export function useRemoveRestDay() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (date: string) => {
+      const res = await api.delete('/stats/rest-day', { data: { date } });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats', 'rest-day'] });
+      queryClient.invalidateQueries({ queryKey: ['stats', 'weekly-activity'] });
+    },
+  });
+}
+
+export function useRestDaysOfWeek() {
+  return useQuery({
+    queryKey: ['user', 'profile', 'restDaysOfWeek'],
+    queryFn: async () => {
+      const res = await api.get('/users/me/profile');
+      const profile = res.data.data ?? res.data;
+      return (profile?.restDaysOfWeek ?? []) as number[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useUpdateRestDaysOfWeek() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (restDaysOfWeek: number[]) => {
+      const res = await api.patch('/users/me/profile', { restDaysOfWeek });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'profile'] });
+      queryClient.invalidateQueries({ queryKey: ['stats', 'weekly-activity'] });
+      queryClient.invalidateQueries({ queryKey: ['stats', 'rest-day'] });
+    },
+  });
+}

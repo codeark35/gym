@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, UseGuards, Body, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Query, UseGuards, Body, Logger } from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -53,6 +53,32 @@ export class StatsController {
         error: true,
         message: error?.message ?? 'Error al registrar día de descanso',
         code: error?.code ?? 'UNKNOWN',
+      };
+    }
+  }
+
+  @Post('rest-days/bulk')
+  async registerRestDaysBulk(@CurrentUser() user: any, @Body('dates') dates: string[]) {
+    try {
+      const result = await this.statsService.registerRestDaysBulk(user.googleId, dates);
+      return { data: result };
+    } catch (error: any) {
+      return {
+        error: true,
+        message: error?.message ?? 'Error al registrar días de descanso',
+      };
+    }
+  }
+
+  @Delete('rest-day')
+  async removeRestDay(@CurrentUser() user: any, @Body('date') date: string) {
+    try {
+      const result = await this.statsService.removeRestDay(user.googleId, date);
+      return { data: result };
+    } catch (error: any) {
+      return {
+        error: true,
+        message: error?.message ?? 'Error al eliminar día de descanso',
       };
     }
   }

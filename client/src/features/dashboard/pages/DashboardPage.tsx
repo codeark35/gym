@@ -1,7 +1,7 @@
 import AppShell from '../../../components/layout/AppShell';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import EmptyState from '../../../components/ui/EmptyState';
-import { useStats, useWeeklyActivity, useRegisterRestDay, useTodayRestDay } from '../../stats/hooks/useStats';
+import { useStats, useWeeklyActivity, useRegisterRestDay, useRegisterRestDaysBulk, useTodayRestDay } from '../../stats/hooks/useStats';
 import { useTodayWorkout, useWorkoutsForDate } from '../../workouts/hooks/useWorkouts';
 import { todayISO, formatDateFull } from '../../../utils/date.utils';
 import {
@@ -20,9 +20,13 @@ export default function DashboardPage() {
   const { data: weeklyActivity, isLoading: loadingWeeklyActivity, error: weeklyActivityError } = useWeeklyActivity();
   const { data: todayRestDay } = useTodayRestDay();
   const registerRestDay = useRegisterRestDay();
+  const registerRestDaysBulk = useRegisterRestDaysBulk();
   const [showManualDate, setShowManualDate] = useState(false);
   const [manualDate, setManualDate] = useState(todayISO());
   const [manualMessage, setManualMessage] = useState<string | null>(null);
+  const [bulkDates, setBulkDates] = useState<string[]>([]);
+  const [showBulkPicker, setShowBulkPicker] = useState(false);
+  const [bulkDateInput, setBulkDateInput] = useState(todayISO());
 
   useEffect(() => {
     if (statsError) {
@@ -55,8 +59,30 @@ export default function DashboardPage() {
   const handleManualRestDay = () => {
     registerRestDay.mutate(manualDate, {
       onSuccess: () => {
-        setManualMessage(`Día de descanso registrado para ${formatDateFull(manualDate)}`);
+        setManualMessage(`D\u00eda de descanso registrado para ${formatDateFull(manualDate)}`);
         setShowManualDate(false);
+      },
+    });
+  };
+
+  const handleAddBulkDate = () => {
+    if (!bulkDates.includes(bulkDateInput)) {
+      setBulkDates((prev) => [...prev, bulkDateInput].sort());
+    }
+  };
+
+  const handleRemoveBulkDate = (date: string) => {
+    setBulkDates((prev) => prev.filter((d) => d !== date));
+  };
+
+  const handleSaveBulkDates = () => {
+    if (bulkDates.length === 0) return;
+    registerRestDaysBulk.mutate(bulkDates, {
+      onSuccess: (res: any) => {
+        const count = res?.data?.registered ?? bulkDates.length;
+        setManualMessage(`${count} d\u00eda${count > 1 ? 's' : ''} de descanso registrado${count > 1 ? 's' : ''}`);
+        setBulkDates([]);
+        setShowBulkPicker(false);
       },
     });
   };
@@ -281,29 +307,106 @@ export default function DashboardPage() {
         <div>
           {!hasRestDayToday ? (
             <>
-              <button 
+              <button
                 onClick={handleRestDay}
                 className="btn btn-outline-info w-100 btn-action d-flex align-items-center justify-content-center mb-2"
                 disabled={registerRestDay.isPending}
               >
                 <Moon size={18} className="me-2" />
-                {registerRestDay.isPending ? 'Registrando...' : 'Registrar día de descanso'}
+                {registerRestDay.isPending ? 'Registrando...' : 'Registrar hoy como descanso'}
               </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary w-100 btn-action d-flex align-items-center justify-content-center mb-2"
+                onClick={() => setShowBulkPicker((prev) => !prev)}
+              >
+                <CalendarDays size={18} className="me-2" />
+                {showBulkPicker ? 'Cerrar' : 'Seleccionar varios d\u00edas'}
+              </button>
+              {showBulkPicker && (
+                <div className="card card-dark p-3" style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <label className="form-label text-white-50 mb-2 small">
+                    Fechas seleccionadas ({bulkDates.length})
+                  </label>
+                  {bulkDates.length > 0 && (
+                    <div className="d-flex flex-wrap gap-1 mb-2">
+                      {bulkDates.map((d) => (
+                        <span
+                          key={d}
+                          className="badge d-inline-flex align-items-center gap-1"
+                          style={{
+                            background: 'rgba(148, 163, 184, 0.2)',
+                            color: '#e2e8f0',
+                            fontSize: '0.75rem',
+                            padding: '0.35em 0.65em',
+                            borderRadius: 8,
+                          }}
+                        >
+                          {formatDateFull(d)}
+                          <button
+                            type="button"
+                            className="btn-close btn-close-white"
+                            style={{ fontSize: '0.5rem', opacity: 0.6 }}
+                            onClick={() => handleRemoveBulkDate(d)}
+                            aria-label="Quitar"
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="d-flex gap-2">
+                    <input
+                      type="date"
+                      value={bulkDateInput}
+                      onChange={(e) => setBulkDateInput(e.target.value)}
+                      className="form-control bg-dark text-white border-0 flex-fill"
+                      style={{ minHeight: 44, fontSize: '0.875rem' }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-light"
+                      onClick={handleAddBulkDate}
+                      style={{ minWidth: 44, height: 44, borderRadius: 10 }}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="d-flex gap-2 mt-3">
+                    <button
+                      type="button"
+                      className="btn btn-success flex-fill"
+                      onClick={handleSaveBulkDates}
+                      disabled={bulkDates.length === 0 || registerRestDaysBulk.isPending}
+                      style={{ borderRadius: 10, minHeight: 44 }}
+                    >
+                      {registerRestDaysBulk.isPending ? 'Guardando...' : `Guardar ${bulkDates.length} d\u00eda${bulkDates.length !== 1 ? 's' : ''}`}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-light"
+                      onClick={() => setBulkDates([])}
+                      style={{ borderRadius: 10, minHeight: 44 }}
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 className="btn btn-outline-secondary w-100 btn-action d-flex align-items-center justify-content-center"
                 onClick={() => setShowManualDate((prev) => !prev)}
               >
                 <CalendarDays size={18} className="me-2" />
-                Registrar descanso para otra fecha
+                Registrar descanso para una fecha
               </button>
               {showManualDate && (
                 <div className="card card-dark mt-3 p-3" style={{ borderRadius: 14 }}>
-                  <label className="form-label text-white-50 mb-2">Selecciona fecha</label>
+                  <label className="form-label text-white-50 mb-2">Seleccionar fecha</label>
                   <input
                     type="date"
                     value={manualDate}
-                    onChange={(event) => setManualDate(event.target.value)}
+                    onChange={(e) => setManualDate(e.target.value)}
                     className="form-control bg-dark text-white border-0"
                     style={{ minHeight: 48 }}
                   />

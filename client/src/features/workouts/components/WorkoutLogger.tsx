@@ -225,7 +225,7 @@ export default function WorkoutLogger() {
   return (
     <div className="fade-in">
       {/* Sticky header for active workout */}
-      <div className="sticky-top" style={{ top: 0, zIndex: 100, background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', margin: '-1rem -1rem 1rem -1rem', padding: '0.75rem 1rem' }}>
+      <div className="sticky-top" style={{ top: 0, zIndex: 100, background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', margin: '-1rem 0 1rem 0', padding: '0.75rem 1rem' }}>
         <div className="d-flex align-items-center justify-content-between">
           <div>
             <div className="d-flex align-items-center gap-2 mb-1">

@@ -41,6 +41,7 @@ model UserProfile {
   enableOvertrainingAlerts  Boolean         @default(true)
   enableRoutineSuggestions  Boolean         @default(true)
   enablePRNotifications     Boolean         @default(true)
+  restDaysOfWeek           Int[]           @default([])
   updatedAt               DateTime        @updatedAt
 
   @@map("user_profiles")

@@ -183,11 +183,17 @@ export class StatsService {
       
       // Get start of week (Monday) using UTC-3 parts
       const { year, month, day, dayOfWeek } = dateParts(today);
-      // dayOfWeek: 0=Sun, 1=Mon... Monday offset = dayOfWeek - 1, but if Sunday we want -6
       const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
       const startOfWeek = dateFromParts(year, month, day + diff);
 
       const endOfWeek = addDays(startOfWeek, 6);
+
+      // Get profile for recurring rest days
+      const profile = await this.prisma.userProfile.findUnique({
+        where: { userId: user.id },
+        select: { restDaysOfWeek: true },
+      });
+      const recurringDays: number[] = profile?.restDaysOfWeek ?? [];
 
       // Get workouts for this week
       const workouts = await this.prisma.workout.findMany({
@@ -198,7 +204,7 @@ export class StatsService {
         select: { date: true, status: true },
       });
 
-      // Get rest days for this week
+      // Get explicit rest days for this week
       let restDays: { date: Date }[] = [];
       try {
         restDays = await this.prisma.restDay.findMany({
@@ -218,15 +224,17 @@ export class StatsService {
       for (let i = 0; i < 7; i++) {
         const currentDate = addDays(startOfWeek, i);
         const currentDateStr = dateToLocalString(currentDate);
+        const { dayOfWeek: dow } = dateParts(currentDate);
         
         const workout = workouts.find(w => dateToLocalString(w.date) === currentDateStr);
         const restDay = restDays.find(r => dateToLocalString(r.date) === currentDateStr);
+        const isRecurringRest = recurringDays.includes(dow);
         
         if (workout && workout.status === 'COMPLETED') {
           activity.push({ day: days[i], status: 'completed', intensity: 100 });
         } else if (workout && workout.status === 'IN_PROGRESS') {
           activity.push({ day: days[i], status: 'active', intensity: 70 });
-        } else if (restDay) {
+        } else if (restDay || isRecurringRest) {
           activity.push({ day: days[i], status: 'rest', intensity: 20 });
         } else {
           activity.push({ day: days[i], status: 'empty', intensity: 0 });
@@ -236,7 +244,6 @@ export class StatsService {
       return activity;
     } catch (error: any) {
       this.logger.error(`[getWeeklyActivity] Error for user ${googleId}: ${error.message}`, error.stack);
-      // Return empty week as fallback
       const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
       return days.map(day => ({ day, status: 'empty', intensity: 0 }));
     }
@@ -247,7 +254,7 @@ export class StatsService {
     const date = dateStr ? parseLocalDate(dateStr) : getTodayInTimezone();
 
     try {
-      return await this.prisma.restDay.findUnique({
+      const explicit = await this.prisma.restDay.findUnique({
         where: {
           userId_date: {
             userId: user.id,
@@ -255,8 +262,21 @@ export class StatsService {
           },
         },
       });
+      if (explicit) return explicit;
+
+      // Check recurring rest days from profile
+      const profile = await this.prisma.userProfile.findUnique({
+        where: { userId: user.id },
+      });
+      if (profile?.restDaysOfWeek?.length) {
+        const { dayOfWeek } = dateParts(date);
+        if (profile.restDaysOfWeek.includes(dayOfWeek)) {
+          return { userId: user.id, date, isRecurring: true } as any;
+        }
+      }
+
+      return null;
     } catch (e: any) {
-      // table rest_days might not exist yet
       return null;
     }
   }
@@ -282,6 +302,54 @@ export class StatsService {
     } catch (e: any) {
       console.error('registerRestDay failed:', e?.message ?? e);
       return null;
+    }
+  }
+
+  async registerRestDaysBulk(googleId: string, dates: string[]) {
+    const user = await this.usersService.findByGoogleId(googleId);
+    const results: any[] = [];
+
+    for (const dateStr of dates) {
+      const restDate = parseLocalDate(dateStr);
+      try {
+        const result = await this.prisma.restDay.upsert({
+          where: {
+            userId_date: {
+              userId: user.id,
+              date: restDate,
+            },
+          },
+          update: {},
+          create: {
+            userId: user.id,
+            date: restDate,
+          },
+        });
+        results.push(result);
+      } catch (e: any) {
+        this.logger.warn(`registerRestDaysBulk: skipping ${dateStr}: ${e.message}`);
+      }
+    }
+
+    return { registered: results.length, total: dates.length };
+  }
+
+  async removeRestDay(googleId: string, dateStr: string) {
+    const user = await this.usersService.findByGoogleId(googleId);
+    const date = parseLocalDate(dateStr);
+
+    try {
+      await this.prisma.restDay.delete({
+        where: {
+          userId_date: {
+            userId: user.id,
+            date,
+          },
+        },
+      });
+      return { removed: true };
+    } catch (e: any) {
+      return { removed: false };
     }
   }
 }
